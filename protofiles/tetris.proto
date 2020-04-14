@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = ".;protofiles";
+
+//[paul@localhost dockerised-tetris]$ protoc --go_out=plugins=grpc:. ./protofiles/*.proto
+message NewBoardRequest {
+  string playerName = 1;
+}
+
+message BoardState {
+  string uuid = 1;
+  string playerName = 2;
+  enum Game {
+    IN_PROGRESS = 0;
+    LOST = 1;
+  }
+}
+
+service MakeBoard {
+  rpc MakeBoard(NewBoardRequest) returns (BoardState)
+  {}
+}
