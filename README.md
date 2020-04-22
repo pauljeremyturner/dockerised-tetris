@@ -13,3 +13,6 @@ DONE
 
 DT-3
 enable protobuf streaming for stubbed game state updates to be displayed on UI
+
+DT-4
+implement matrix algebra for piece rotations, provide a way to define coordinates of pieces
