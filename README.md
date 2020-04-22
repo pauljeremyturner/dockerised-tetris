@@ -9,6 +9,7 @@ DONE
 
 DT-2
 build a UI that can be updated with board updates and register key presses for user moves.  Add dockerfile for server process
+DONE
 
 DT-3
 enable protobuf streaming for stubbed game state updates to be displayed on UI
