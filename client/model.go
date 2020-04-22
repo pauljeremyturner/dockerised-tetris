@@ -1,17 +1,28 @@
 package client
 
-type Block struct {
-	X     int
-	Y     int
-	Color int
-}
+import (
+	"github.com/google/uuid"
+	"github.com/nsf/termbox-go"
+	"github.com/pauljeremyturner/dockerised-tetris/shared"
+)
 
 type GameState struct {
-	Blocks    []Block
-	NextPiece []Block
+	Pixels    []Pixel
+	NextPiece []Pixel
 	GameOver  bool
-	Lines     int
+	Score     int
 	Duration  int64
 }
 
-type MoveType rune
+type ClientSession struct {
+	Uuid               uuid.UUID
+	PlayerName         string
+	MoveChannel        chan shared.MoveType
+	BoardUpdateChannel chan GameState
+}
+
+type Pixel struct {
+	X     int
+	Y     int
+	Color termbox.Attribute
+}

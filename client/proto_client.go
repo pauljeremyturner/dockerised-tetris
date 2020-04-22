@@ -1,82 +1,143 @@
 package client
 
 import (
-	pf "github.com/pauljeremyturner/dockerised-tetris/protofiles"
-	"google.golang.org/grpc"
+	"context"
+	"github.com/google/uuid"
+	"github.com/nsf/termbox-go"
+	"io"
 	"log"
+
+	pf "github.com/pauljeremyturner/dockerised-tetris/protofiles"
+	"github.com/pauljeremyturner/dockerised-tetris/shared"
+	"google.golang.org/grpc"
 )
+
+type ProtoClientState struct {
+	appLog          *Logger
+	playerSession   ClientSession
+	startGameClient pf.StartGameClient
+	moveClient      pf.MoveClient
+}
 
 var (
 	address = "localhost:50051"
 )
 
-type UpdateBoard func(gs GameState)
-
-type TetrisProto interface {
-	Move(r rune)
+type ProtoClient interface {
+	ListenToMove()
+	ReceiveStream(uuid uuid.UUID, playerName string)
 }
 
-func NewTetrisProto(ub UpdateBoard) TetrisProto {
-	return ProtoClientState{
-		updateBoard: ub,
-		appLog:      GetFileLogger().Logger,
-	}
-}
+func NewTetrisProto(session ClientSession) ProtoClient {
 
-type ProtoClientState struct {
-	updateBoard UpdateBoard
-	appLog      *log.Logger
-}
-
-func (r ProtoClientState) Move(char rune) {
-
-	r.appLog.Printf("send move to proto %s", char)
-
-}
-
-func (pcs ProtoClientState) ReceiveStream(client pf.StartGameClient, request *pf.NewGameRequest) {
-	/*
-		stream, err := client.StartGame(context.Background(), request)
-		if err != nil {
-			log.Fatalf("%v.StartGame(_) = _, %v", client, err)
-		}
-		// Listen to the stream of messages
-		for {
-			gameUpdate, err := stream.Recv()
-			if err == io.EOF {
-				// If there are no more messages, get out of loop
-				break
-			}
-			if err != nil {
-				log.Fatalf("%v.StartGame(_) = _, %v", client, err)
-			}
-
-			fmt.Println(gameUpdate)
-	*/
-	for i := 0; i < 100; i++ {
-		gs := GameState{
-			Blocks:    nil,
-			NextPiece: nil,
-			GameOver:  false,
-			Lines:     0,
-			Duration:  0,
-		}
-
-		pcs.updateBoard(gs)
-	}
-
-}
-
-func stuff() {
-	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
+
 	if err != nil {
+
 		log.Fatalf("Did not connect: %v", err)
 	}
-	defer conn.Close()
 
-	//client := pf.NewStartGameClient(conn)
+	return ProtoClientState{
+		appLog:          GetFileLogger(),
+		playerSession:   session,
+		startGameClient: pf.NewStartGameClient(conn),
+		moveClient:      pf.NewMoveClient(conn),
+	}
+}
 
-	// Contact the server and print out its response.
-	//ReceiveStream(client, &pf.NewGameRequest{})
+func (pcs ProtoClientState) ListenToMove() {
+
+	appLog.Println("Listen to Moves")
+
+	for mt := range pcs.playerSession.MoveChannel {
+
+		appLog.Println(string(mt))
+		in := &pf.MoveRequest{
+			Uuid: pcs.playerSession.Uuid.String(),
+			Move: moveTypeToProto(mt),
+		}
+		pcs.moveClient.Move(context.Background(), in)
+
+	}
+}
+
+func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
+	request := &pf.NewGameRequest{
+		Uuid:       uuid.String(),
+		PlayerName: playerName,
+	}
+	stream, err := pcs.startGameClient.StartGame(context.Background(), request)
+	if err != nil {
+		appLog.Fatalf("%v.StartGame(_) = _, %v", pcs.startGameClient, err)
+	}
+	// Listen to the stream of messages
+	for {
+		gameUpdate, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			appLog.Println("StartGame state, error", pcs.startGameClient, err)
+			break
+		}
+
+		gs := &GameState{
+			Pixels:    make([]Pixel, len(gameUpdate.Squares), len(gameUpdate.Squares)),
+			NextPiece: nil,
+			GameOver:  gameUpdate.GameOver,
+			Score:     int(gameUpdate.Score),
+			Duration:  gameUpdate.Duration,
+		}
+		for _, sq := range gameUpdate.Squares {
+			pixel := Pixel{X: int(sq.X), Y: int(sq.Y), Color: convertColor(sq.Color)}
+			gs.Pixels = append(gs.Pixels, pixel)
+		}
+
+		pcs.playerSession.BoardUpdateChannel <- *gs
+	}
+
+}
+
+func convertColor(i uint32) termbox.Attribute {
+	var c termbox.Attribute
+	switch i {
+	case 1:
+		c = termbox.ColorMagenta
+	case 2:
+		c = termbox.ColorRed
+	case 3:
+		c = termbox.ColorGreen
+	case 4:
+		c = termbox.ColorCyan
+	case 5:
+		c = termbox.ColorWhite
+	case 6:
+		c = termbox.ColorYellow
+	case 7:
+		c = termbox.ColorBlue
+	default:
+		c = termbox.ColorDefault
+	}
+	return c
+}
+
+func moveTypeToProto(mt shared.MoveType) pf.MoveRequest_MoveEnum {
+
+	switch mt {
+	case shared.DOWN:
+		return pf.MoveRequest_DOWN
+	case shared.DROP:
+		return pf.MoveRequest_DROP
+	case shared.ROTATERIGHT:
+		return pf.MoveRequest_ROTATERIGHT
+	case shared.ROTATELEFT:
+		return pf.MoveRequest_ROTATELEFT
+	case shared.MOVERIGHT:
+		return pf.MoveRequest_MOVERIGHT
+	case shared.MOVELEFT:
+		return pf.MoveRequest_MOVELEFT
+	default:
+		panic("fixme")
+	}
+
 }
