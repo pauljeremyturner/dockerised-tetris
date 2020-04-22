@@ -3,10 +3,6 @@ package main
 import (
 	pf "github.com/pauljeremyturner/dockerised-tetris/protofiles"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	"log"
-	"net"
 )
 
 const (
@@ -14,6 +10,13 @@ const (
 )
 
 type server struct{}
+
+func (s *server) GameMove(ctx context.Context, in *pf.GameMove) (*pf.GameMoveResponse, error) {
+
+	return &pf.GameMoveResponse{}, nil
+}
+
+/*
 
 func (s *server) MakeBoard(ctx context.Context, in *pf.NewBoardRequest) (*pf.BoardState, error) {
 
@@ -35,3 +38,4 @@ func main() {
 		log.Fatalf("Failed to serve: %v", err)
 	}
 }
+*/

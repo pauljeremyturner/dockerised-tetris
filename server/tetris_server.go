@@ -1,18 +1,17 @@
-package tetrisserver
+package server
 
 import (
 	"github.com/google/uuid"
 )
 
-type tetrisServiceState struct{
-
+type tetrisServiceState struct {
 }
 
 type TetrisService interface {
 	NewGame() uuid.UUID
 }
 
-func  NewTetrisService() TetrisService {
+func NewTetrisService() TetrisService {
 	return &tetrisServiceState{}
 }
 
