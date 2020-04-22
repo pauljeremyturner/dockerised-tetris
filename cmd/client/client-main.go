@@ -1,31 +1,23 @@
-
 package main
 
-import (
-	"log"
-
-	pf "github.com/pauljeremyturner/dockerised-tetris/protofiles"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-)
-
-const (
-	address = "localhost:50051"
-)
+import "github.com/pauljeremyturner/dockerised-tetris/client"
 
 func main() {
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("Did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pf.NewMakeBoardClient(conn)
 
-	r, err := c.MakeBoard(context.Background(), &pf.NewBoardRequest{PlayerName: "foobar" })
+	ui = client.NewTetrisClientUi(listenKeyboard)
 
-	if err != nil {
-		log.Fatalf("New board failed %v", err)
-	}
-	log.Printf("New Board confirmed: %t", r.PlayerName)
+	tp = client.NewTetrisProto(updateBard)
+	ui.NewGame()
+
+}
+
+var tp client.TetrisProto
+var ui client.TetrisClientUi
+
+func listenKeyboard(r rune) {
+	tp.Move(r)
+}
+
+func updateBard(gs client.GameState) {
+	ui.Update(gs)
 }

@@ -29,8 +29,66 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
+type GameMove_MoveType int32
+
+const (
+	GameMove_DROP        GameMove_MoveType = 0
+	GameMove_MOVELEFT    GameMove_MoveType = 1
+	GameMove_MOVERIGHT   GameMove_MoveType = 2
+	GameMove_ROTATELEFT  GameMove_MoveType = 3
+	GameMove_ROTATERIGHT GameMove_MoveType = 4
+	GameMove_DOWN        GameMove_MoveType = 5
+)
+
+// Enum value maps for GameMove_MoveType.
+var (
+	GameMove_MoveType_name = map[int32]string{
+		0: "DROP",
+		1: "MOVELEFT",
+		2: "MOVERIGHT",
+		3: "ROTATELEFT",
+		4: "ROTATERIGHT",
+		5: "DOWN",
+	}
+	GameMove_MoveType_value = map[string]int32{
+		"DROP":        0,
+		"MOVELEFT":    1,
+		"MOVERIGHT":   2,
+		"ROTATELEFT":  3,
+		"ROTATERIGHT": 4,
+		"DOWN":        5,
+	}
+)
+
+func (x GameMove_MoveType) Enum() *GameMove_MoveType {
+	p := new(GameMove_MoveType)
+	*p = x
+	return p
+}
+
+func (x GameMove_MoveType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GameMove_MoveType) Descriptor() protoreflect.EnumDescriptor {
+	return file_protofiles_tetris_proto_enumTypes[0].Descriptor()
+}
+
+func (GameMove_MoveType) Type() protoreflect.EnumType {
+	return &file_protofiles_tetris_proto_enumTypes[0]
+}
+
+func (x GameMove_MoveType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GameMove_MoveType.Descriptor instead.
+func (GameMove_MoveType) EnumDescriptor() ([]byte, []int) {
+	return file_protofiles_tetris_proto_rawDescGZIP(), []int{4, 0}
+}
+
 //[paul@localhost dockerised-tetris]$ protoc --go_out=plugins=grpc:. ./protofiles/*.proto
-type NewBoardRequest struct {
+type NewGameRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -38,8 +96,8 @@ type NewBoardRequest struct {
 	PlayerName string `protobuf:"bytes,1,opt,name=playerName,proto3" json:"playerName,omitempty"`
 }
 
-func (x *NewBoardRequest) Reset() {
-	*x = NewBoardRequest{}
+func (x *NewGameRequest) Reset() {
+	*x = NewGameRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protofiles_tetris_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -47,13 +105,13 @@ func (x *NewBoardRequest) Reset() {
 	}
 }
 
-func (x *NewBoardRequest) String() string {
+func (x *NewGameRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NewBoardRequest) ProtoMessage() {}
+func (*NewGameRequest) ProtoMessage() {}
 
-func (x *NewBoardRequest) ProtoReflect() protoreflect.Message {
+func (x *NewGameRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_protofiles_tetris_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -65,29 +123,30 @@ func (x *NewBoardRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NewBoardRequest.ProtoReflect.Descriptor instead.
-func (*NewBoardRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use NewGameRequest.ProtoReflect.Descriptor instead.
+func (*NewGameRequest) Descriptor() ([]byte, []int) {
 	return file_protofiles_tetris_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *NewBoardRequest) GetPlayerName() string {
+func (x *NewGameRequest) GetPlayerName() string {
 	if x != nil {
 		return x.PlayerName
 	}
 	return ""
 }
 
-type BoardState struct {
+type Square struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Uuid       string `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	PlayerName string `protobuf:"bytes,2,opt,name=playerName,proto3" json:"playerName,omitempty"`
+	X     uint32 `protobuf:"varint,1,opt,name=x,proto3" json:"x,omitempty"`
+	Y     uint32 `protobuf:"varint,2,opt,name=y,proto3" json:"y,omitempty"`
+	Color uint32 `protobuf:"varint,3,opt,name=color,proto3" json:"color,omitempty"`
 }
 
-func (x *BoardState) Reset() {
-	*x = BoardState{}
+func (x *Square) Reset() {
+	*x = Square{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_protofiles_tetris_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -95,13 +154,13 @@ func (x *BoardState) Reset() {
 	}
 }
 
-func (x *BoardState) String() string {
+func (x *Square) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BoardState) ProtoMessage() {}
+func (*Square) ProtoMessage() {}
 
-func (x *BoardState) ProtoReflect() protoreflect.Message {
+func (x *Square) ProtoReflect() protoreflect.Message {
 	mi := &file_protofiles_tetris_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -113,43 +172,256 @@ func (x *BoardState) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BoardState.ProtoReflect.Descriptor instead.
-func (*BoardState) Descriptor() ([]byte, []int) {
+// Deprecated: Use Square.ProtoReflect.Descriptor instead.
+func (*Square) Descriptor() ([]byte, []int) {
 	return file_protofiles_tetris_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *BoardState) GetUuid() string {
+func (x *Square) GetX() uint32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *Square) GetY() uint32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *Square) GetColor() uint32 {
+	if x != nil {
+		return x.Color
+	}
+	return 0
+}
+
+type GameUpdate struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Uuid       string    `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	PlayerName string    `protobuf:"bytes,2,opt,name=playerName,proto3" json:"playerName,omitempty"`
+	GameOver   bool      `protobuf:"varint,3,opt,name=gameOver,proto3" json:"gameOver,omitempty"`
+	Lines      uint32    `protobuf:"varint,4,opt,name=lines,proto3" json:"lines,omitempty"`
+	Duration   int64     `protobuf:"varint,5,opt,name=duration,proto3" json:"duration,omitempty"`
+	Squares    []*Square `protobuf:"bytes,6,rep,name=squares,proto3" json:"squares,omitempty"`
+}
+
+func (x *GameUpdate) Reset() {
+	*x = GameUpdate{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protofiles_tetris_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GameUpdate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GameUpdate) ProtoMessage() {}
+
+func (x *GameUpdate) ProtoReflect() protoreflect.Message {
+	mi := &file_protofiles_tetris_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GameUpdate.ProtoReflect.Descriptor instead.
+func (*GameUpdate) Descriptor() ([]byte, []int) {
+	return file_protofiles_tetris_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GameUpdate) GetUuid() string {
 	if x != nil {
 		return x.Uuid
 	}
 	return ""
 }
 
-func (x *BoardState) GetPlayerName() string {
+func (x *GameUpdate) GetPlayerName() string {
 	if x != nil {
 		return x.PlayerName
 	}
 	return ""
 }
 
+func (x *GameUpdate) GetGameOver() bool {
+	if x != nil {
+		return x.GameOver
+	}
+	return false
+}
+
+func (x *GameUpdate) GetLines() uint32 {
+	if x != nil {
+		return x.Lines
+	}
+	return 0
+}
+
+func (x *GameUpdate) GetDuration() int64 {
+	if x != nil {
+		return x.Duration
+	}
+	return 0
+}
+
+func (x *GameUpdate) GetSquares() []*Square {
+	if x != nil {
+		return x.Squares
+	}
+	return nil
+}
+
+type GameMoveResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *GameMoveResponse) Reset() {
+	*x = GameMoveResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protofiles_tetris_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GameMoveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GameMoveResponse) ProtoMessage() {}
+
+func (x *GameMoveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_protofiles_tetris_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GameMoveResponse.ProtoReflect.Descriptor instead.
+func (*GameMoveResponse) Descriptor() ([]byte, []int) {
+	return file_protofiles_tetris_proto_rawDescGZIP(), []int{3}
+}
+
+type GameMove struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Uuid     string            `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	MoveType GameMove_MoveType `protobuf:"varint,2,opt,name=moveType,proto3,enum=GameMove_MoveType" json:"moveType,omitempty"`
+}
+
+func (x *GameMove) Reset() {
+	*x = GameMove{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_protofiles_tetris_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GameMove) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GameMove) ProtoMessage() {}
+
+func (x *GameMove) ProtoReflect() protoreflect.Message {
+	mi := &file_protofiles_tetris_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GameMove.ProtoReflect.Descriptor instead.
+func (*GameMove) Descriptor() ([]byte, []int) {
+	return file_protofiles_tetris_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GameMove) GetUuid() string {
+	if x != nil {
+		return x.Uuid
+	}
+	return ""
+}
+
+func (x *GameMove) GetMoveType() GameMove_MoveType {
+	if x != nil {
+		return x.MoveType
+	}
+	return GameMove_DROP
+}
+
 var File_protofiles_tetris_proto protoreflect.FileDescriptor
 
 var file_protofiles_tetris_proto_rawDesc = []byte{
 	0x0a, 0x17, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x2f, 0x74, 0x65, 0x74,
-	0x72, 0x69, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x31, 0x0a, 0x0f, 0x4e, 0x65, 0x77,
-	0x42, 0x6f, 0x61, 0x72, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x0a,
-	0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0a, 0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x40, 0x0a, 0x0a,
-	0x42, 0x6f, 0x61, 0x72, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x75, 0x75,
-	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x75, 0x75, 0x69, 0x64, 0x12, 0x1e,
-	0x0a, 0x0a, 0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0a, 0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x32, 0x39,
-	0x0a, 0x09, 0x4d, 0x61, 0x6b, 0x65, 0x42, 0x6f, 0x61, 0x72, 0x64, 0x12, 0x2c, 0x0a, 0x09, 0x4d,
-	0x61, 0x6b, 0x65, 0x42, 0x6f, 0x61, 0x72, 0x64, 0x12, 0x10, 0x2e, 0x4e, 0x65, 0x77, 0x42, 0x6f,
-	0x61, 0x72, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0b, 0x2e, 0x42, 0x6f, 0x61,
-	0x72, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22, 0x00, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x3b, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x72, 0x69, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x30, 0x0a, 0x0e, 0x4e, 0x65, 0x77,
+	0x47, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x70,
+	0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0a, 0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x3a, 0x0a, 0x06, 0x53,
+	0x71, 0x75, 0x61, 0x72, 0x65, 0x12, 0x0c, 0x0a, 0x01, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d,
+	0x52, 0x01, 0x78, 0x12, 0x0c, 0x0a, 0x01, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x01,
+	0x79, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x6f, 0x6c, 0x6f, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d,
+	0x52, 0x05, 0x63, 0x6f, 0x6c, 0x6f, 0x72, 0x22, 0xb1, 0x01, 0x0a, 0x0a, 0x47, 0x61, 0x6d, 0x65,
+	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x75, 0x75, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x75, 0x75, 0x69, 0x64, 0x12, 0x1e, 0x0a, 0x0a, 0x70, 0x6c,
+	0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a,
+	0x70, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x67, 0x61,
+	0x6d, 0x65, 0x4f, 0x76, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x67, 0x61,
+	0x6d, 0x65, 0x4f, 0x76, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x05, 0x6c, 0x69, 0x6e, 0x65, 0x73, 0x12, 0x1a, 0x0a, 0x08,
+	0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08,
+	0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x21, 0x0a, 0x07, 0x73, 0x71, 0x75, 0x61,
+	0x72, 0x65, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x07, 0x2e, 0x53, 0x71, 0x75, 0x61,
+	0x72, 0x65, 0x52, 0x07, 0x73, 0x71, 0x75, 0x61, 0x72, 0x65, 0x73, 0x22, 0x12, 0x0a, 0x10, 0x47,
+	0x61, 0x6d, 0x65, 0x4d, 0x6f, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0xac, 0x01, 0x0a, 0x08, 0x47, 0x61, 0x6d, 0x65, 0x4d, 0x6f, 0x76, 0x65, 0x12, 0x12, 0x0a, 0x04,
+	0x75, 0x75, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x75, 0x75, 0x69, 0x64,
+	0x12, 0x2e, 0x0a, 0x08, 0x6d, 0x6f, 0x76, 0x65, 0x54, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0e, 0x32, 0x12, 0x2e, 0x47, 0x61, 0x6d, 0x65, 0x4d, 0x6f, 0x76, 0x65, 0x2e, 0x4d, 0x6f,
+	0x76, 0x65, 0x54, 0x79, 0x70, 0x65, 0x52, 0x08, 0x6d, 0x6f, 0x76, 0x65, 0x54, 0x79, 0x70, 0x65,
+	0x22, 0x5c, 0x0a, 0x08, 0x4d, 0x6f, 0x76, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x08, 0x0a, 0x04,
+	0x44, 0x52, 0x4f, 0x50, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x4d, 0x4f, 0x56, 0x45, 0x4c, 0x45,
+	0x46, 0x54, 0x10, 0x01, 0x12, 0x0d, 0x0a, 0x09, 0x4d, 0x4f, 0x56, 0x45, 0x52, 0x49, 0x47, 0x48,
+	0x54, 0x10, 0x02, 0x12, 0x0e, 0x0a, 0x0a, 0x52, 0x4f, 0x54, 0x41, 0x54, 0x45, 0x4c, 0x45, 0x46,
+	0x54, 0x10, 0x03, 0x12, 0x0f, 0x0a, 0x0b, 0x52, 0x4f, 0x54, 0x41, 0x54, 0x45, 0x52, 0x49, 0x47,
+	0x48, 0x54, 0x10, 0x04, 0x12, 0x08, 0x0a, 0x04, 0x44, 0x4f, 0x57, 0x4e, 0x10, 0x05, 0x32, 0x2e,
+	0x0a, 0x04, 0x4d, 0x6f, 0x76, 0x65, 0x12, 0x26, 0x0a, 0x04, 0x4d, 0x6f, 0x76, 0x65, 0x12, 0x09,
+	0x2e, 0x47, 0x61, 0x6d, 0x65, 0x4d, 0x6f, 0x76, 0x65, 0x1a, 0x11, 0x2e, 0x47, 0x61, 0x6d, 0x65,
+	0x4d, 0x6f, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x32, 0x3a,
+	0x0a, 0x09, 0x53, 0x74, 0x61, 0x72, 0x74, 0x47, 0x61, 0x6d, 0x65, 0x12, 0x2d, 0x0a, 0x09, 0x53,
+	0x74, 0x61, 0x72, 0x74, 0x47, 0x61, 0x6d, 0x65, 0x12, 0x0f, 0x2e, 0x4e, 0x65, 0x77, 0x47, 0x61,
+	0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0b, 0x2e, 0x47, 0x61, 0x6d, 0x65,
+	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x22, 0x00, 0x30, 0x01, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x3b,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -164,19 +436,28 @@ func file_protofiles_tetris_proto_rawDescGZIP() []byte {
 	return file_protofiles_tetris_proto_rawDescData
 }
 
-var file_protofiles_tetris_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_protofiles_tetris_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_protofiles_tetris_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_protofiles_tetris_proto_goTypes = []interface{}{
-	(*NewBoardRequest)(nil), // 0: NewBoardRequest
-	(*BoardState)(nil),      // 1: BoardState
+	(GameMove_MoveType)(0),   // 0: GameMove.MoveType
+	(*NewGameRequest)(nil),   // 1: NewGameRequest
+	(*Square)(nil),           // 2: Square
+	(*GameUpdate)(nil),       // 3: GameUpdate
+	(*GameMoveResponse)(nil), // 4: GameMoveResponse
+	(*GameMove)(nil),         // 5: GameMove
 }
 var file_protofiles_tetris_proto_depIdxs = []int32{
-	0, // 0: MakeBoard.MakeBoard:input_type -> NewBoardRequest
-	1, // 1: MakeBoard.MakeBoard:output_type -> BoardState
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: GameUpdate.squares:type_name -> Square
+	0, // 1: GameMove.moveType:type_name -> GameMove.MoveType
+	5, // 2: Move.Move:input_type -> GameMove
+	1, // 3: StartGame.StartGame:input_type -> NewGameRequest
+	4, // 4: Move.Move:output_type -> GameMoveResponse
+	3, // 5: StartGame.StartGame:output_type -> GameUpdate
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_protofiles_tetris_proto_init() }
@@ -186,7 +467,7 @@ func file_protofiles_tetris_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_protofiles_tetris_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NewBoardRequest); i {
+			switch v := v.(*NewGameRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -198,7 +479,43 @@ func file_protofiles_tetris_proto_init() {
 			}
 		}
 		file_protofiles_tetris_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BoardState); i {
+			switch v := v.(*Square); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protofiles_tetris_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GameUpdate); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protofiles_tetris_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GameMoveResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_protofiles_tetris_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GameMove); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -215,13 +532,14 @@ func file_protofiles_tetris_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_protofiles_tetris_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   5,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_protofiles_tetris_proto_goTypes,
 		DependencyIndexes: file_protofiles_tetris_proto_depIdxs,
+		EnumInfos:         file_protofiles_tetris_proto_enumTypes,
 		MessageInfos:      file_protofiles_tetris_proto_msgTypes,
 	}.Build()
 	File_protofiles_tetris_proto = out.File
@@ -238,74 +556,173 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// MakeBoardClient is the client API for MakeBoard service.
+// MoveClient is the client API for Move service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type MakeBoardClient interface {
-	MakeBoard(ctx context.Context, in *NewBoardRequest, opts ...grpc.CallOption) (*BoardState, error)
+type MoveClient interface {
+	Move(ctx context.Context, in *GameMove, opts ...grpc.CallOption) (*GameMoveResponse, error)
 }
 
-type makeBoardClient struct {
+type moveClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewMakeBoardClient(cc grpc.ClientConnInterface) MakeBoardClient {
-	return &makeBoardClient{cc}
+func NewMoveClient(cc grpc.ClientConnInterface) MoveClient {
+	return &moveClient{cc}
 }
 
-func (c *makeBoardClient) MakeBoard(ctx context.Context, in *NewBoardRequest, opts ...grpc.CallOption) (*BoardState, error) {
-	out := new(BoardState)
-	err := c.cc.Invoke(ctx, "/MakeBoard/MakeBoard", in, out, opts...)
+func (c *moveClient) Move(ctx context.Context, in *GameMove, opts ...grpc.CallOption) (*GameMoveResponse, error) {
+	out := new(GameMoveResponse)
+	err := c.cc.Invoke(ctx, "/Move/Move", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// MakeBoardServer is the server API for MakeBoard service.
-type MakeBoardServer interface {
-	MakeBoard(context.Context, *NewBoardRequest) (*BoardState, error)
+// MoveServer is the server API for Move service.
+type MoveServer interface {
+	Move(context.Context, *GameMove) (*GameMoveResponse, error)
 }
 
-// UnimplementedMakeBoardServer can be embedded to have forward compatible implementations.
-type UnimplementedMakeBoardServer struct {
+// UnimplementedMoveServer can be embedded to have forward compatible implementations.
+type UnimplementedMoveServer struct {
 }
 
-func (*UnimplementedMakeBoardServer) MakeBoard(context.Context, *NewBoardRequest) (*BoardState, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MakeBoard not implemented")
+func (*UnimplementedMoveServer) Move(context.Context, *GameMove) (*GameMoveResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Move not implemented")
 }
 
-func RegisterMakeBoardServer(s *grpc.Server, srv MakeBoardServer) {
-	s.RegisterService(&_MakeBoard_serviceDesc, srv)
+func RegisterMoveServer(s *grpc.Server, srv MoveServer) {
+	s.RegisterService(&_Move_serviceDesc, srv)
 }
 
-func _MakeBoard_MakeBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NewBoardRequest)
+func _Move_Move_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GameMove)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MakeBoardServer).MakeBoard(ctx, in)
+		return srv.(MoveServer).Move(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/MakeBoard/MakeBoard",
+		FullMethod: "/Move/Move",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MakeBoardServer).MakeBoard(ctx, req.(*NewBoardRequest))
+		return srv.(MoveServer).Move(ctx, req.(*GameMove))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _MakeBoard_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "MakeBoard",
-	HandlerType: (*MakeBoardServer)(nil),
+var _Move_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "Move",
+	HandlerType: (*MoveServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "MakeBoard",
-			Handler:    _MakeBoard_MakeBoard_Handler,
+			MethodName: "Move",
+			Handler:    _Move_Move_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
+	Metadata: "protofiles/tetris.proto",
+}
+
+// StartGameClient is the client API for StartGame service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type StartGameClient interface {
+	StartGame(ctx context.Context, in *NewGameRequest, opts ...grpc.CallOption) (StartGame_StartGameClient, error)
+}
+
+type startGameClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewStartGameClient(cc grpc.ClientConnInterface) StartGameClient {
+	return &startGameClient{cc}
+}
+
+func (c *startGameClient) StartGame(ctx context.Context, in *NewGameRequest, opts ...grpc.CallOption) (StartGame_StartGameClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_StartGame_serviceDesc.Streams[0], "/StartGame/StartGame", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &startGameStartGameClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type StartGame_StartGameClient interface {
+	Recv() (*GameUpdate, error)
+	grpc.ClientStream
+}
+
+type startGameStartGameClient struct {
+	grpc.ClientStream
+}
+
+func (x *startGameStartGameClient) Recv() (*GameUpdate, error) {
+	m := new(GameUpdate)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// StartGameServer is the server API for StartGame service.
+type StartGameServer interface {
+	StartGame(*NewGameRequest, StartGame_StartGameServer) error
+}
+
+// UnimplementedStartGameServer can be embedded to have forward compatible implementations.
+type UnimplementedStartGameServer struct {
+}
+
+func (*UnimplementedStartGameServer) StartGame(*NewGameRequest, StartGame_StartGameServer) error {
+	return status.Errorf(codes.Unimplemented, "method StartGame not implemented")
+}
+
+func RegisterStartGameServer(s *grpc.Server, srv StartGameServer) {
+	s.RegisterService(&_StartGame_serviceDesc, srv)
+}
+
+func _StartGame_StartGame_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(NewGameRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StartGameServer).StartGame(m, &startGameStartGameServer{stream})
+}
+
+type StartGame_StartGameServer interface {
+	Send(*GameUpdate) error
+	grpc.ServerStream
+}
+
+type startGameStartGameServer struct {
+	grpc.ServerStream
+}
+
+func (x *startGameStartGameServer) Send(m *GameUpdate) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _StartGame_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "StartGame",
+	HandlerType: (*StartGameServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StartGame",
+			Handler:       _StartGame_StartGame_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "protofiles/tetris.proto",
 }

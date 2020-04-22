@@ -3,20 +3,48 @@ syntax = "proto3";
 option go_package = ".;protofiles";
 
 //[paul@localhost dockerised-tetris]$ protoc --go_out=plugins=grpc:. ./protofiles/*.proto
-message NewBoardRequest {
+message NewGameRequest {
   string playerName = 1;
 }
 
-message BoardState {
-  string uuid = 1;
-  string playerName = 2;
-  enum Game {
-    IN_PROGRESS = 0;
-    LOST = 1;
-  }
+message Square {
+  uint32 x = 1;
+  uint32 y = 2;
+  uint32 color = 3;
 }
 
-service MakeBoard {
-  rpc MakeBoard(NewBoardRequest) returns (BoardState)
+message GameUpdate {
+  string uuid = 1;
+  string playerName = 2;
+  bool gameOver = 3;
+  uint32 lines = 4;
+  int64 duration = 5;
+  repeated Square squares = 6;
+  repeated Square nextPiece = 7;
+}
+
+message GameMoveResponse {
+}
+
+message GameMove {
+  string uuid = 1;
+  enum MoveType {
+    DROP = 0;
+      MOVELEFT = 1;
+      MOVERIGHT = 2;
+      ROTATELEFT = 3;
+      ROTATERIGHT = 4;
+      DOWN = 5;
+  }
+  MoveType moveType = 2;
+}
+
+service Move {
+  rpc Move(GameMove) returns (GameMoveResponse)
+  {}
+}
+
+service StartGame {
+  rpc StartGame(NewGameRequest) returns (stream GameUpdate)
   {}
 }
