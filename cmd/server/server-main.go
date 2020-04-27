@@ -1,41 +1,24 @@
 package main
 
 import (
-	pf "github.com/pauljeremyturner/dockerised-tetris/protofiles"
-	"golang.org/x/net/context"
+	server "github.com/pauljeremyturner/dockerised-tetris/server"
+	"github.com/pauljeremyturner/dockerised-tetris/shared"
+	"sync"
 )
 
 const (
 	port = ":50051"
 )
 
-type server struct{}
+var serverLog *shared.Logger
 
-func (s *server) GameMove(ctx context.Context, in *pf.GameMove) (*pf.GameMoveResponse, error) {
+type TetrisGame struct{}
 
-	return &pf.GameMoveResponse{}, nil
-}
-
-/*
-
-func (s *server) MakeBoard(ctx context.Context, in *pf.NewBoardRequest) (*pf.BoardState, error) {
-
-	return &pf.BoardState{
-		PlayerName: "foo",
-	}, nil
+type tetrisServer struct {
+	activeGames sync.Map
 }
 
 func main() {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-	s := grpc.NewServer()
-	pf.RegisterMakeBoardServer(s, &server{})
-	reflection.Register(s)
+	serverLog = server.GetFileLogger()
 
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
 }
-*/

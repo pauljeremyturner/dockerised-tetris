@@ -7,30 +7,29 @@ import (
 	"time"
 )
 
-type logger struct {
+type Logger struct {
 	filename string
 	*log.Logger
 }
 
-var appLog *logger
+var appLog *Logger
 var once sync.Once
 
-func GetFileLogger() *logger {
+func GetFileLogger() *Logger {
 	once.Do(func() {
-		appLog = createLogger("log.log")
+		appLog = createLogger("tetris-client.log")
 	})
 	return appLog
 }
 
-func createLogger(fname string) *logger {
+func createLogger(fname string) *Logger {
 	file, err := os.OpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
 
 	if err != nil {
 		log.Panicf("Could not start logger %s", err)
 	}
 
-	return &logger{
-		filename: fname,
+	return &Logger{
 		Logger:   log.New(file, time.Now().Format(time.RFC3339), log.Lshortfile),
 	}
 }

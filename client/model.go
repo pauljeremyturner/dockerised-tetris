@@ -1,17 +1,21 @@
 package client
 
-type Block struct {
-	X     int
-	Y     int
-	Color int
-}
+import (
+	"github.com/google/uuid"
+	"github.com/pauljeremyturner/dockerised-tetris/shared"
+)
 
 type GameState struct {
-	Blocks    []Block
-	NextPiece []Block
+	Pixels    []shared.Pixel
+	NextPiece []shared.Pixel
 	GameOver  bool
-	Lines     int
+	Score     int
 	Duration  int64
 }
 
-type MoveType rune
+type ClientSession struct {
+	Uuid               uuid.UUID
+	PlayerName         string
+	MoveChannel        chan shared.MoveType
+	BoardUpdateChannel chan GameState
+}
