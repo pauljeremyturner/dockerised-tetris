@@ -1,23 +1,32 @@
 package main
 
-import "github.com/pauljeremyturner/dockerised-tetris/client"
+import (
+	"github.com/google/uuid"
+	"github.com/pauljeremyturner/dockerised-tetris/client"
+	"github.com/pauljeremyturner/dockerised-tetris/shared"
+)
+
+var tp client.ProtoClient
+var ui client.TetrisClientUi
+var clientSession client.ClientSession
 
 func main() {
 
-	ui = client.NewTetrisClientUi(listenKeyboard)
+	uuid, _ := uuid.NewRandom()
+	clientSession = client.ClientSession{
+		Uuid:               uuid,
+		PlayerName:         "paul",
+		MoveChannel:        make(chan shared.MoveType, 10),
+		BoardUpdateChannel: make(chan client.GameState, 10),
+	}
 
-	tp = client.NewTetrisProto(updateBard)
-	ui.NewGame()
+	ui = client.NewTetrisClientUi(clientSession)
 
-}
+	tp = client.NewTetrisProto(clientSession)
 
-var tp client.TetrisProto
-var ui client.TetrisClientUi
+	go tp.ReceiveStream(uuid, "paul")
 
-func listenKeyboard(r rune) {
-	tp.Move(r)
-}
-
-func updateBard(gs client.GameState) {
-	ui.Update(gs)
+	go tp.ListenToMove()
+	go ui.ListenToBoardUpdates()
+	ui.StartGame()
 }

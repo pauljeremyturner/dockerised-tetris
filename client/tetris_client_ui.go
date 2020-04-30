@@ -1,62 +1,56 @@
 package client
 
 import (
-	"github.com/nsf/termbox-go"
-	"log"
 	"time"
+
+	"github.com/nsf/termbox-go"
+	"github.com/pauljeremyturner/dockerised-tetris/shared"
 )
 
-const backgroundColor = termbox.ColorBlack
-const boardColor = termbox.ColorBlack
-const instructionsColor = termbox.ColorYellow
+const (
+	backgroundColor   = termbox.ColorBlack
+	boardColor        = termbox.ColorBlack
+	instructionsColor = termbox.ColorYellow
 
-const originXBoard = 10
-const originYBoard = 10
+	originXBoard = 10
+	originYBoard = 10
 
-const originXNextPiece = 10
-const originYNextPiece = 10
+	originXNextPiece = 10
+	originYNextPiece = 10
 
-const BLOCK = '▇'
-const HORIZONTAL = '═'
-const VERTICAL = '║'
-const TOPLEFT = '╔'
-const TOPRIGHT = '╗'
-const BOTTOMLEFT = '╚'
-const BOTTOMRIGHT = '╝'
-
-//todo wrap in const {}
-const MOVELEFT = 's'
-const MOVERIGHT = 'd'
-const ROTATELEFT = 'a'
-const ROTATERIGHT = 'f'
-const DROP = 'e'
-const DOWN = 'x'
+	BLOCK       = '▇'
+	HORIZONTAL  = '═'
+	VERTICAL    = '║'
+	TOPLEFT     = '╔'
+	TOPRIGHT    = '╗'
+	BOTTOMLEFT  = '╚'
+	BOTTOMRIGHT = '╝'
+)
 
 type TetrisClientUi interface {
-	Update(gs GameState)
-	NewGame()
+	ListenToBoardUpdates()
+	StartGame()
 }
-type KeyListener func(r rune)
 type ClientUiState struct {
-	eventChannel chan termbox.Event
-	appLog       *log.Logger
-	keyListener  KeyListener
+	eventChannel  chan termbox.Event
+	playerSession ClientSession
+	appLog        *Logger
 }
 
-func NewTetrisClientUi(kl KeyListener) TetrisClientUi {
+func NewTetrisClientUi(ps ClientSession) TetrisClientUi {
 	return ClientUiState{
-		eventChannel: make(chan termbox.Event, 1),
-		appLog:       GetFileLogger().Logger,
-		keyListener:  kl,
+		eventChannel:  make(chan termbox.Event, 1),
+		appLog:        GetFileLogger(),
+		playerSession: ps,
 	}
 }
 
-func (r ClientUiState) NewGame() {
+func (r ClientUiState) StartGame() {
 
 	err := termbox.Init()
 
 	if err != nil {
-		log.Panicf("Initialise terminal failed: %s", err)
+		appLog.Panicf("Initialise terminal failed: %s", err)
 	}
 
 	termbox.HideCursor()
@@ -68,26 +62,31 @@ func (r ClientUiState) NewGame() {
 
 	drawBorder(0, 0, 40, 20)
 
-
-	b := Block{
+	b := shared.Pixel{
 		X:     5,
 		Y:     5,
 		Color: 5,
 	}
-	r.drawBoardBlock(b)
+	r.drawBoardPixel(b)
 
 	termbox.Flush()
-	time.Sleep(5 * time.Second)
+	time.Sleep(5 * time.Minute)
 	termbox.SetInputMode(termbox.InputEsc)
 }
 
-func (r ClientUiState) Update(gm GameState) {
+func (r ClientUiState) ListenToBoardUpdates() {
 
-	for _, bl := range gm.Blocks {
-		r.drawBoardBlock(bl)
-	}
-	for _, bl := range gm.NextPiece {
-		r.drawNextPieceBlock(bl)
+	for gm := range r.playerSession.BoardUpdateChannel {
+
+		r.appLog.Println("Board Update", gm)
+
+		for _, p := range gm.Pixels {
+			r.drawBoardPixel(p)
+		}
+		for _, p := range gm.NextPiece {
+			r.drawNextPieceBlock(p)
+		}
+		termbox.Flush()
 	}
 }
 
@@ -111,34 +110,38 @@ func (r ClientUiState) listenKeyPress() {
 
 func (r ClientUiState) onKeyPress(event termbox.Event) {
 
-	char := rune(event.Ch)
+	moveType := shared.MoveType(event.Ch)
 
-	r.keyListener(char)
-
-	switch char {
-	case ROTATELEFT:
-		r.appLog.Println("UI ->rotate left")
-	case ROTATERIGHT:
-		r.appLog.Println("UI ->rotate right")
-	case MOVELEFT:
-		r.appLog.Println("UI ->move left")
-	case MOVERIGHT:
-		r.appLog.Println("UI ->move right")
-	case DROP:
-		r.appLog.Println("UI ->drop")
-	case DOWN:
-		r.appLog.Println("UI ->down")
+	switch moveType {
+	case shared.ROTATELEFT:
+		fallthrough
+	case shared.ROTATERIGHT:
+		fallthrough
+	case shared.MOVELEFT:
+		fallthrough
+	case shared.MOVERIGHT:
+		fallthrough
+	case shared.DROP:
+		fallthrough
+	case shared.DOWN:
+		r.appLog.Printf("UI -> enqueue move %s", string(moveType))
+		r.playerSession.MoveChannel <- moveType
+	default:
+		r.appLog.Println("UI -> unknown comamnd, ignoring")
 	}
 }
 
-func (r ClientUiState) drawBoardBlock(block Block) {
-	termbox.SetCell(block.X/2, block.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(block.X/2+1, block.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
+func (r ClientUiState) drawBoardPixel(p shared.Pixel) {
+
+	r.appLog.Println("draw board pixel ", p)
+
+	termbox.SetCell(p.X/2, p.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(p.X/2+1, p.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
 }
 
-func (r ClientUiState) drawNextPieceBlock(block Block) {
-	termbox.SetCell(block.X/2, block.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(block.X/2+1, block.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
+func (r ClientUiState) drawNextPieceBlock(pixel shared.Pixel) {
+	termbox.SetCell(pixel.X/2, pixel.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pixel.X/2+1, pixel.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func drawBorder(leftEdge int, topEdge int, width int, height int) {
