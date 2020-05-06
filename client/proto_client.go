@@ -28,7 +28,7 @@ type ProtoClient interface {
 	ReceiveStream(uuid uuid.UUID, playerName string)
 }
 
-func NewTetrisProto(session ClientSession) ProtoClient {
+func NewTetrisProto(session *ClientSession) ProtoClient {
 
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 
@@ -37,9 +37,9 @@ func NewTetrisProto(session ClientSession) ProtoClient {
 		log.Fatalf("Did not connect: %v", err)
 	}
 
-	return ProtoClientState{
+	return &ProtoClientState{
 		appLog:          GetFileLogger(),
-		playerSession:   session,
+		playerSession:   *session,
 		startGameClient: pf.NewStartGameClient(conn),
 		moveClient:      pf.NewMoveClient(conn),
 	}
@@ -51,11 +51,11 @@ func (pcs ProtoClientState) ListenToMove() {
 
 	for mt := range pcs.playerSession.MoveChannel {
 
-		appLog.Println(string(mt))
 		in := &pf.MoveRequest{
 			Uuid: pcs.playerSession.Uuid.String(),
 			Move: moveTypeToProto(mt),
 		}
+		appLog.Println("Sending Move, ", in)
 		pcs.moveClient.Move(context.Background(), in)
 
 	}
@@ -82,15 +82,23 @@ func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
 		}
 
 		gs := &GameState{
-			Pixels:    make([]Pixel, len(gameUpdate.Squares), len(gameUpdate.Squares)),
-			NextPiece: nil,
+			Pixels:    make([]Pixel, 0),
+			NextPiece: make([]Pixel, 0),
 			GameOver:  gameUpdate.GameOver,
 			Score:     int(gameUpdate.Score),
 			Duration:  gameUpdate.Duration,
 		}
+
+		appLog.Println("Game over?", gs.GameOver)
+
 		for _, sq := range gameUpdate.Squares {
 			pixel := Pixel{X: int(sq.X), Y: int(sq.Y), Color: convertColor(sq.Color)}
 			gs.Pixels = append(gs.Pixels, pixel)
+		}
+
+		for _, sq := range gameUpdate.NextPiece {
+			pixel := Pixel{X: int(sq.X), Y: int(sq.Y), Color: convertColor(sq.Color)}
+			gs.NextPiece = append(gs.NextPiece, pixel)
 		}
 
 		pcs.playerSession.BoardUpdateChannel <- *gs

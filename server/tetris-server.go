@@ -8,20 +8,16 @@ import (
 	"github.com/pauljeremyturner/dockerised-tetris/shared"
 )
 
-type tetrisState struct {
-	activeGames sync.Map
+
+type tetris struct {
+	activeGames *sync.Map
 	board       shared.Board
 }
 
-type Tetris interface {
-	EnqueueMove(u uuid.UUID, move shared.MoveType)
-	StartNewGame(player Player) *ServerSession
-}
+func NewTetris() *tetris {
 
-func NewTetris() Tetris {
-
-	return &tetrisState{
-		activeGames: sync.Map{},
+	return &tetris{
+		activeGames: &sync.Map{},
 		board: shared.Board{
 			Height: shared.BOARDSIZEY,
 			Width:  shared.BOARDSIZEX,
@@ -29,9 +25,9 @@ func NewTetris() Tetris {
 	}
 }
 
-func (ts *tetrisState) StartNewGame(player Player) *ServerSession {
+func (r *tetris) StartNewGame(player Player) *serverSession {
 
-	session := ServerSession{
+	session := &serverSession{
 		player:         player,
 		moveQueue:      make(chan shared.MoveType, 10),
 		gameQueue:      make(chan GameState, 10),
@@ -40,61 +36,65 @@ func (ts *tetrisState) StartNewGame(player Player) *ServerSession {
 		lines:          Lines{lineMap: make(map[int][]Pixel)},
 		nextPiece:      RandomPiece(),
 		gameOver:       false,
-		board:          ts.board,
+		board:          r.board,
+		startSeconds:   time.Now().Unix(),
 	}
 
-	ts.activeGames.Store(player.uuid, session)
+	GetFileLogger().Println("New Game", player.uuid.String())
+	//r.activeGames.Store(player.uuid.String(), *session)
 
-	go redraw(&session)
-	go tick(&session)
+	go redraw(session)
+	go tick(session)
 
-	return &session
+	return session
 
 }
 
-func (ts *tetrisState) EnqueueMove(u uuid.UUID, move shared.MoveType) {
+func (r *tetris) EnqueueMove(u uuid.UUID, move shared.MoveType) {
 
 	GetFileLogger().Printf("Queue MoveType: %s to tetris engine player:%s", u.String(), string(move))
 
-	ss, ok := ts.activeGames.Load(u)
+	ss, ok := r.activeGames.Load(u)
 	if ok {
-		serverSession := ss.(ServerSession)
+		serverSession := ss.(*serverSession)
 		serverSession.moveQueue <- move
+	} else {
+
+
+		GetFileLogger().Printf("Client Error: uuid for active game not found, uuid: %s", u)
 	}
 }
 
-func tick(ss *ServerSession) {
+func tick(ss *serverSession) {
 
-	for time := range time.Tick(300 * time.Millisecond) {
+	for time := range time.Tick(1 * time.Second) {
 		if ss.gameOver {
 			break
 		}
 		GetFileLogger().Printf("Tick game for Player: %s at time: %s", ss.player.uuid, time.String())
 
 		ss.moveQueue <- shared.DOWN
-
 	}
 }
 
-func gameState(ss *ServerSession) GameState {
+func gameState(ss *serverSession) GameState {
 
 	allPixels := make([]Pixel, 0)
-
 	allPixels = append(allPixels, ss.activePiece.pixels...)
-
-	for _, pslice := range ss.lines.lineMap {
-		allPixels = append(allPixels, pslice...)
+	for _, lps := range ss.lines.lineMap {
+		allPixels = append(allPixels, lps...)
 	}
-
 	return GameState{
 		Score:     ss.score,
 		Pixels:    allPixels,
 		NextPiece: ss.nextPiece.pixels,
+		GameOver:  ss.gameOver,
+		Duration:  time.Now().Unix() - ss.startSeconds,
 	}
 
 }
 
-func nextPiece(ss *ServerSession) {
+func nextPiece(ss *serverSession) {
 
 	lineMap := ss.lines.lineMap
 	for _, pp := range ss.activePiece.pixels {
@@ -109,18 +109,20 @@ func nextPiece(ss *ServerSession) {
 		}
 	}
 
+	ss.lines.Compact(ss.board)
+
 	ss.activePiece = ss.nextPiece
 	ss.nextPiece = RandomPiece()
 }
 
-func redraw(ss *ServerSession) {
+func redraw(ss *serverSession) {
 
 	for r := range ss.moveQueue {
 
 		GetFileLogger().Printf("Enqueue game update game for Player: %s", ss.player.uuid)
 
-		GetFileLogger().Println("compare command with commands", r, shared.ROTATERIGHT)
-		GetFileLogger().Println("compare command with commands", r == shared.ROTATERIGHT)
+		GetFileLogger().Println("compare command with commands", r, shared.MOVERIGHT)
+		GetFileLogger().Println("compare command with commands", r == shared.MOVERIGHT)
 
 		GetFileLogger().Printf("Active Piece Before Move piece: %s move: %s", ss.activePiece.String(), string(r))
 
@@ -149,14 +151,19 @@ func redraw(ss *ServerSession) {
 		GetFileLogger().Printf("Active Piece After Move piece: %s, piece moved?: %t", ss.activePiece.String(), pieceMoved)
 
 		var topLine = ss.board.Height
-		for k := range ss.lines.lineMap {
+		for k, _ := range ss.lines.lineMap {
 			if k < topLine {
 				topLine = k
 			}
 		}
+
 		ss.gameOver = topLine <= 2
 
 		ss.gameQueue <- gameState(ss)
+
+		if ss.gameOver {
+			close(ss.gameQueue)
+		}
 
 	}
 }

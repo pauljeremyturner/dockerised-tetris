@@ -8,12 +8,12 @@ import (
 
 var tp client.ProtoClient
 var ui client.TetrisUi
-var clientSession client.ClientSession
+var clientSession *client.ClientSession
 
 func main() {
 
 	uuid, _ := uuid.NewRandom()
-	clientSession = client.ClientSession{
+	clientSession = &client.ClientSession{
 		Uuid:               uuid,
 		PlayerName:         "paul",
 		MoveChannel:        make(chan shared.MoveType, 10),

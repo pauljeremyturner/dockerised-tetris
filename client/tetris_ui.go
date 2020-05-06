@@ -33,11 +33,11 @@ type TetrisUi struct {
 	appLog        *Logger
 }
 
-func NewTetrisUi(ps ClientSession) TetrisUi {
+func NewTetrisUi(cs *ClientSession) TetrisUi {
 	return TetrisUi{
 		eventChannel:  make(chan termbox.Event, 10),
 		appLog:        GetFileLogger(),
-		playerSession: ps,
+		playerSession: *cs,
 	}
 }
 
@@ -66,7 +66,13 @@ func (r TetrisUi) ListenToBoardUpdates() {
 
 	for gm := range r.playerSession.BoardUpdateChannel {
 
-		r.appLog.Println("Board Update", gm)
+		r.appLog.Printf("Board Update: %s", gm.String())
+
+		if gm.GameOver {
+			r.writeMessage("GAME OVER", 0, 5, termbox.ColorWhite)
+			termbox.Flush()
+			break
+		}
 
 		for x := 0; x < 50; x++ {
 			for y := 1; y < 30; y++ {
@@ -157,6 +163,15 @@ func (r TetrisUi) drawBoardPixel(p Pixel) {
 
 	termbox.SetCell(originXBoard+(2*p.X), originYBoard+p.Y, ' ', termbox.ColorDefault, c)
 	termbox.SetCell(originXBoard+(2*p.X+1), originYBoard+p.Y, ' ', termbox.ColorDefault, c)
+}
+
+func (r TetrisUi) writeMessage(message string, x int, y int, color termbox.Attribute) {
+
+	for _, char := range message {
+		termbox.SetCell(x, y, char, termbox.ColorDefault, color)
+		x++
+	}
+
 }
 
 func (r TetrisUi) drawNextPieceBlock(pixel Pixel) {
