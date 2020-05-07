@@ -8,7 +8,6 @@ import (
 	"github.com/pauljeremyturner/dockerised-tetris/shared"
 )
 
-
 type tetris struct {
 	activeGames *sync.Map
 	board       shared.Board
@@ -41,7 +40,7 @@ func (r *tetris) StartNewGame(player Player) *serverSession {
 	}
 
 	GetFileLogger().Println("New Game", player.uuid.String())
-	//r.activeGames.Store(player.uuid.String(), *session)
+	r.activeGames.Store(player.uuid.String(), *session)
 
 	go redraw(session)
 	go tick(session)
@@ -59,8 +58,6 @@ func (r *tetris) EnqueueMove(u uuid.UUID, move shared.MoveType) {
 		serverSession := ss.(*serverSession)
 		serverSession.moveQueue <- move
 	} else {
-
-
 		GetFileLogger().Printf("Client Error: uuid for active game not found, uuid: %s", u)
 	}
 }

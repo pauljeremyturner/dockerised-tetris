@@ -19,7 +19,7 @@ const (
 	DOWN        = 'x'
 
 	BOARDSIZEX = 20
-	BOARDSIZEY = 20
+	BOARDSIZEY = 16
 )
 
 type Board struct {

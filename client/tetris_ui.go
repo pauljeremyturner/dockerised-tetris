@@ -13,7 +13,7 @@ const (
 	instructionsColor = termbox.ColorYellow
 
 	originXBoard = 2
-	originYBoard = 2
+	originYBoard = 4
 
 	originXNextPiece = 10
 	originYNextPiece = 10
@@ -31,6 +31,7 @@ type TetrisUi struct {
 	eventChannel  chan termbox.Event
 	playerSession ClientSession
 	appLog        *Logger
+	board shared.Board
 }
 
 func NewTetrisUi(cs *ClientSession) TetrisUi {
@@ -38,6 +39,10 @@ func NewTetrisUi(cs *ClientSession) TetrisUi {
 		eventChannel:  make(chan termbox.Event, 10),
 		appLog:        GetFileLogger(),
 		playerSession: *cs,
+		board : shared.Board{
+			Height: shared.BOARDSIZEY,
+			Width:  shared.BOARDSIZEX,
+		},
 	}
 }
 
@@ -55,7 +60,7 @@ func (r TetrisUi) StartGame() {
 
 	defer termbox.Close()
 
-	drawBorder(0, 0, 40, 20)
+	drawBorder(0, 0, 45, 30)
 
 	termbox.Flush()
 	time.Sleep(5 * time.Minute)
@@ -74,8 +79,8 @@ func (r TetrisUi) ListenToBoardUpdates() {
 			break
 		}
 
-		for x := 0; x < 50; x++ {
-			for y := 1; y < 30; y++ {
+		for x := originXBoard - 1; x < originXBoard + 1 + r.board.Width; x++ {
+			for y := originYBoard; y < originYBoard + r.board.Height; y++ {
 				r.clearBoardPixel(Pixel{x, y, 0})
 			}
 		}
@@ -135,8 +140,8 @@ func (r TetrisUi) clearBoardPixel(p Pixel) {
 
 	//r.appLog.Println("draw board pixel ", p)
 
-	termbox.SetCell(originXBoard+(2*p.X), originYBoard+p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(originXBoard+(2*p.X+1), originYBoard+p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell((2*p.X), p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell((2*p.X+1), p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
 }
 func (r TetrisUi) drawBoardPixel(p Pixel) {
 

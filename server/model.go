@@ -12,8 +12,8 @@ type GameState struct {
 	Score     int
 	Pixels    []Pixel
 	NextPiece []Pixel
-	GameOver bool
-	Duration int64
+	GameOver  bool
+	Duration  int64
 }
 
 type Lines struct {
@@ -189,10 +189,10 @@ func NewT() Piece {
 
 func NewL() Piece {
 	/**
-	      X
-	      X
-	      XX
-	 */
+	  X
+	  X
+	  XX
+	*/
 	pixels := []Pixel{
 		{X: 0, Y: 1, Color: 3},
 		{X: 0, Y: 0, Color: 3},
@@ -204,10 +204,10 @@ func NewL() Piece {
 
 func NewP() Piece {
 	/**
-	      XX
-	      X
-	      X
-	 */
+	  XX
+	  X
+	  X
+	*/
 	points := []Pixel{
 		{X: 0, Y: 1, Color: 4},
 		{X: 0, Y: 0, Color: 4},
@@ -219,9 +219,9 @@ func NewP() Piece {
 
 func NewS() Piece {
 	/**
-	      XX
-	     XX
-	 */
+	   XX
+	  XX
+	*/
 	pixels := []Pixel{
 		{X: 1, Y: 0, Color: 5},
 		{X: 0, Y: 0, Color: 5},
@@ -233,9 +233,9 @@ func NewS() Piece {
 
 func NewZ() Piece {
 	/**
-	      XX
-	       XX
-	 */
+	  XX
+	   XX
+	*/
 	pixels := []Pixel{
 		{X: 1, Y: 1, Color: 6},
 		{X: 0, Y: 1, Color: 6},
@@ -247,9 +247,9 @@ func NewZ() Piece {
 
 func NewO() Piece {
 	/**
-	      XX
-	      XX
-	 */
+	  XX
+	  XX
+	*/
 	pixels := []Pixel{
 		{X: 1, Y: 0, Color: 7},
 		{X: 0, Y: 0, Color: 7},
@@ -266,8 +266,6 @@ func (r *Piece) String() string {
 	}
 	return s
 }
-
-
 
 type serverSession struct {
 	player         Player

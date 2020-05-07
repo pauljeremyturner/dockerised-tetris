@@ -46,9 +46,6 @@ func (s *protoServer) StartGame(in *pf.NewGameRequest, stream pf.StartGame_Start
 	u, _ := uuid.Parse(in.Uuid)
 	ss := s.tetris.StartNewGame(Player{uuid: u, playerName: in.PlayerName})
 	s.tetris.activeGames.Store(u, ss)
-	x, ok := s.tetris.activeGames.Load(u)
-
-	GetFileLogger().Println(x, ok)
 
 	for gs := range ss.gameQueue {
 
