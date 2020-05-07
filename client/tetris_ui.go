@@ -12,8 +12,8 @@ const (
 	boardColor        = termbox.ColorBlack
 	instructionsColor = termbox.ColorYellow
 
-	originXBoard = 10
-	originYBoard = 10
+	originXBoard = 2
+	originYBoard = 4
 
 	originXNextPiece = 10
 	originYNextPiece = 10
@@ -27,25 +27,26 @@ const (
 	BOTTOMRIGHT = '╝'
 )
 
-type TetrisClientUi interface {
-	ListenToBoardUpdates()
-	StartGame()
-}
-type ClientUiState struct {
+type TetrisUi struct {
 	eventChannel  chan termbox.Event
 	playerSession ClientSession
 	appLog        *Logger
+	board shared.Board
 }
 
-func NewTetrisClientUi(ps ClientSession) TetrisClientUi {
-	return ClientUiState{
-		eventChannel:  make(chan termbox.Event, 1),
+func NewTetrisUi(cs *ClientSession) TetrisUi {
+	return TetrisUi{
+		eventChannel:  make(chan termbox.Event, 10),
 		appLog:        GetFileLogger(),
-		playerSession: ps,
+		playerSession: *cs,
+		board : shared.Board{
+			Height: shared.BOARDSIZEY,
+			Width:  shared.BOARDSIZEX,
+		},
 	}
 }
 
-func (r ClientUiState) StartGame() {
+func (r TetrisUi) StartGame() {
 
 	err := termbox.Init()
 
@@ -53,32 +54,36 @@ func (r ClientUiState) StartGame() {
 		appLog.Panicf("Initialise terminal failed: %s", err)
 	}
 
-	termbox.HideCursor()
-
 	go r.readKey()
 	go r.listenKeyPress()
+	go r.ListenToBoardUpdates()
 
 	defer termbox.Close()
 
-	drawBorder(0, 0, 40, 20)
-
-	b := shared.Pixel{
-		X:     5,
-		Y:     5,
-		Color: 5,
-	}
-	r.drawBoardPixel(b)
+	drawBorder(0, 0, 45, 30)
 
 	termbox.Flush()
 	time.Sleep(5 * time.Minute)
 	termbox.SetInputMode(termbox.InputEsc)
 }
 
-func (r ClientUiState) ListenToBoardUpdates() {
+func (r TetrisUi) ListenToBoardUpdates() {
 
 	for gm := range r.playerSession.BoardUpdateChannel {
 
-		r.appLog.Println("Board Update", gm)
+		r.appLog.Printf("Board Update: %s", gm.String())
+
+		if gm.GameOver {
+			r.writeMessage("GAME OVER", 0, 5, termbox.ColorWhite)
+			termbox.Flush()
+			break
+		}
+
+		for x := originXBoard - 1; x < originXBoard + 1 + r.board.Width; x++ {
+			for y := originYBoard; y < originYBoard + r.board.Height; y++ {
+				r.clearBoardPixel(Pixel{x, y, 0})
+			}
+		}
 
 		for _, p := range gm.Pixels {
 			r.drawBoardPixel(p)
@@ -90,25 +95,25 @@ func (r ClientUiState) ListenToBoardUpdates() {
 	}
 }
 
-func (r ClientUiState) String() string {
+func (r TetrisUi) String() string {
 	return "tetris" //do more here!
 }
 
-func (r ClientUiState) readKey() {
+func (r TetrisUi) readKey() {
 	switch ev := termbox.PollEvent(); ev.Type {
 	case termbox.EventKey:
 		r.eventChannel <- ev
 	}
 }
 
-func (r ClientUiState) listenKeyPress() {
+func (r TetrisUi) listenKeyPress() {
 	for e := range r.eventChannel {
 		r.onKeyPress(e)
 		r.readKey()
 	}
 }
 
-func (r ClientUiState) onKeyPress(event termbox.Event) {
+func (r TetrisUi) onKeyPress(event termbox.Event) {
 
 	moveType := shared.MoveType(event.Ch)
 
@@ -131,17 +136,52 @@ func (r ClientUiState) onKeyPress(event termbox.Event) {
 	}
 }
 
-func (r ClientUiState) drawBoardPixel(p shared.Pixel) {
+func (r TetrisUi) clearBoardPixel(p Pixel) {
 
-	r.appLog.Println("draw board pixel ", p)
+	//r.appLog.Println("draw board pixel ", p)
 
-	termbox.SetCell(p.X/2, p.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(p.X/2+1, p.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell((2*p.X), p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell((2*p.X+1), p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+}
+func (r TetrisUi) drawBoardPixel(p Pixel) {
+
+	//r.appLog.Println("draw board pixel ", p)
+	var c termbox.Attribute
+	switch p.Color {
+	case 1:
+		c = termbox.ColorMagenta
+	case 2:
+		c = termbox.ColorRed
+	case 3:
+		c = termbox.ColorGreen
+	case 4:
+		c = termbox.ColorCyan
+	case 5:
+		c = termbox.ColorWhite
+	case 6:
+		c = termbox.ColorYellow
+	case 7:
+		c = termbox.ColorBlue
+	default:
+		c = termbox.ColorDefault
+	}
+
+	termbox.SetCell(originXBoard+(2*p.X), originYBoard+p.Y, ' ', termbox.ColorDefault, c)
+	termbox.SetCell(originXBoard+(2*p.X+1), originYBoard+p.Y, ' ', termbox.ColorDefault, c)
 }
 
-func (r ClientUiState) drawNextPieceBlock(pixel shared.Pixel) {
+func (r TetrisUi) writeMessage(message string, x int, y int, color termbox.Attribute) {
+
+	for _, char := range message {
+		termbox.SetCell(x, y, char, termbox.ColorDefault, color)
+		x++
+	}
+
+}
+
+func (r TetrisUi) drawNextPieceBlock(pixel Pixel) {
 	termbox.SetCell(pixel.X/2, pixel.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(pixel.X/2+1, pixel.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
+	//termbox.SetCell(pixel.X/2+1, pixel.Y, BLOCK, termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func drawBorder(leftEdge int, topEdge int, width int, height int) {

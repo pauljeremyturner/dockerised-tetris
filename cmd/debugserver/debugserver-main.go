@@ -32,13 +32,13 @@ func (s *debugServer) StartGame(in *pf.NewGameRequest, stream pf.StartGame_Start
 			Score:      uint32(i),
 			Duration:   0,
 			Squares: []*pf.Square{&pf.Square{
-				X:     uint32(i % 10),
-				Y:     uint32(i % 10),
+				X:     uint32(i%10) * 2,
+				Y:     uint32(i%10) * 2,
 				Color: 0,
 			}},
 			NextPiece: []*pf.Square{&pf.Square{
-				X:     uint32(i % 3),
-				Y:     uint32(i % 3),
+				X:     uint32(3),
+				Y:     uint32(3),
 				Color: 0,
 			}},
 		}); err != nil {

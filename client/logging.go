@@ -30,6 +30,6 @@ func createLogger(fname string) *Logger {
 	}
 
 	return &Logger{
-		Logger:   log.New(file, time.Now().Format(time.RFC3339), log.Lshortfile),
+		Logger: log.New(file, time.Now().Format(time.RFC3339), log.Lshortfile),
 	}
 }

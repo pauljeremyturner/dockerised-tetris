@@ -16,9 +16,8 @@ import (
 
 var port = ":50051"
 
-var ts *tetrisState
-
-type protoServerState struct {
+type protoServer struct {
+	tetris tetris
 }
 
 type ProtoServer interface {
@@ -26,14 +25,15 @@ type ProtoServer interface {
 	Move(uuid uuid.UUID)
 }
 
-func StartProtoServer() {
+func StartProtoServer(t *tetris) {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pf.RegisterMoveServer(s, &protoServerState{})
-	pf.RegisterStartGameServer(s, &protoServerState{})
+
+	pf.RegisterMoveServer(s, &protoServer{tetris: *t})
+	pf.RegisterStartGameServer(s, &protoServer{tetris: *t})
 	reflection.Register(s)
 
 	if err := s.Serve(lis); err != nil {
@@ -41,32 +41,39 @@ func StartProtoServer() {
 	}
 }
 
-func (s *protoServerState) StartGame(in *pf.NewGameRequest, stream pf.StartGame_StartGameServer) error {
+func (s *protoServer) StartGame(in *pf.NewGameRequest, stream pf.StartGame_StartGameServer) error {
 
 	u, _ := uuid.Parse(in.Uuid)
-	ss := ts.StartNewGame(Player{uuid: u, playerName: in.PlayerName})
+	ss := s.tetris.StartNewGame(Player{uuid: u, playerName: in.PlayerName})
+	s.tetris.activeGames.Store(u, ss)
 
 	for gs := range ss.gameQueue {
+
+		GetFileLogger().Println("Receive board update")
 
 		if err := stream.Send(&pf.GameUpdateResponse{
 			Uuid:       in.Uuid,
 			PlayerName: in.PlayerName,
-			GameOver:   false,
+			GameOver:   gs.GameOver,
 			Score:      uint32(gs.Score),
-			Duration:   0,
+			Duration:   gs.Duration,
 			Squares:    pixelsToSquares(gs.Pixels),
 			NextPiece:  pixelsToSquares(gs.NextPiece),
 		}); err != nil {
-			fmt.Printf("something went wrong", err)
+			fmt.Printf("something went wrong %s", err)
 		}
+
 	}
+
+	GetFileLogger().Println("Game update channel closed, game over")
+
 	return nil
 }
 
-func (s *protoServerState) Move(ctx context.Context, in *pf.MoveRequest) (*pf.MoveResponse, error) {
+func (s *protoServer) Move(ctx context.Context, in *pf.MoveRequest) (*pf.MoveResponse, error) {
 	u, _ := uuid.Parse(in.Uuid)
 
-	ts.EnqueueMove(u, protoMoveTypeToModel(in.GetMove()))
+	s.tetris.EnqueueMove(u, protoMoveTypeToModel(in.GetMove()))
 
 	return &pf.MoveResponse{}, nil
 }
@@ -91,8 +98,8 @@ func protoMoveTypeToModel(me pf.MoveRequest_MoveEnum) shared.MoveType {
 	}
 }
 
-func pixelsToSquares(pixels []shared.Pixel) []*pf.Square {
-	squares := make([]*pf.Square, len(pixels))
+func pixelsToSquares(pixels []Pixel) []*pf.Square {
+	squares := make([]*pf.Square, 0)
 
 	for _, p := range pixels {
 		squares = append(squares, &pf.Square{
@@ -103,5 +110,4 @@ func pixelsToSquares(pixels []shared.Pixel) []*pf.Square {
 	}
 
 	return squares
-
 }

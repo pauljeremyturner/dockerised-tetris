@@ -7,20 +7,20 @@ import (
 )
 
 var tp client.ProtoClient
-var ui client.TetrisClientUi
-var clientSession client.ClientSession
+var ui client.TetrisUi
+var clientSession *client.ClientSession
 
 func main() {
 
 	uuid, _ := uuid.NewRandom()
-	clientSession = client.ClientSession{
+	clientSession = &client.ClientSession{
 		Uuid:               uuid,
 		PlayerName:         "paul",
 		MoveChannel:        make(chan shared.MoveType, 10),
 		BoardUpdateChannel: make(chan client.GameState, 10),
 	}
 
-	ui = client.NewTetrisClientUi(clientSession)
+	ui = client.NewTetrisUi(clientSession)
 
 	tp = client.NewTetrisProto(clientSession)
 

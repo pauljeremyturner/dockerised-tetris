@@ -2,23 +2,17 @@ package main
 
 import (
 	server "github.com/pauljeremyturner/dockerised-tetris/server"
-	"github.com/pauljeremyturner/dockerised-tetris/shared"
-	"sync"
+	"math/rand"
+	"time"
 )
 
 const (
 	port = ":50051"
 )
 
-var serverLog *shared.Logger
-
-type TetrisGame struct{}
-
-type tetrisServer struct {
-	activeGames sync.Map
-}
-
 func main() {
-	serverLog = server.GetFileLogger()
+	rand.Seed(time.Now().UnixNano())
+	tetris := server.NewTetris()
+	server.StartProtoServer(tetris)
 
 }

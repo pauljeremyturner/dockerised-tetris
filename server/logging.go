@@ -13,7 +13,7 @@ var once sync.Once
 
 func GetFileLogger() *shared.Logger {
 	once.Do(func() {
-		appLog = createLogger("tetris-server" + string(time.Now().Unix()) + ".log")
+		appLog = createLogger("tetris-server.log")
 	})
 	return appLog
 }
