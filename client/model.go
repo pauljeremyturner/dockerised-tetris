@@ -11,7 +11,8 @@ type GameState struct {
 	Pixels    []Pixel
 	NextPiece []Pixel
 	GameOver  bool
-	Score     int
+	Lines     int
+	Pieces    int
 	Duration  int64
 }
 
@@ -31,12 +32,13 @@ type Pixel struct {
 func (r *GameState) String() string {
 	var s = "PIXELS:"
 	for _, pix := range r.Pixels {
-		s = s + fmt.Sprintf("pixel, (%d, %d) color %d; ", pix.X, pix.Y, pix.Color)
+		s = s + pix.String()
 	}
 	s = s + "\nNEXT PIECE:"
 	for _, pix := range r.NextPiece {
-		s = s + fmt.Sprintf("pixel, (%d, %d) color %d; ", pix.X, pix.Y, pix.Color)
+		s = s + pix.String()
 	}
+	s = s + "\nPIECES:" + string(r.Pieces)
 	return s
 }
 

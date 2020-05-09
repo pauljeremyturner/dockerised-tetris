@@ -9,11 +9,12 @@ import (
 )
 
 type GameState struct {
-	Score     int
-	Pixels    []Pixel
-	NextPiece []Pixel
-	GameOver  bool
-	Duration  int64
+	LineCount  int
+	PieceCount int
+	Pixels     []Pixel
+	NextPiece  []Pixel
+	GameOver   bool
+	Duration   int64
 }
 
 type Lines struct {
@@ -121,42 +122,42 @@ func RandomPiece() Piece {
 	panic("Expecting a piece to return")
 }
 
-func (r *Piece) RotateClockwise() {
+func (r *Piece) rotateClockwise() {
 	centre := r.pixels[0]
 	for i := range r.pixels {
-		r.pixels[i].RotateClockwise(centre)
+		r.pixels[i].rotateClockwise(centre)
 	}
 }
 
-func (r *Piece) RotateAnticlockwise() {
+func (r *Piece) rotateAnticlockwise() {
 	centre := r.pixels[0]
 	for i := range r.pixels {
-		r.pixels[i].RotateAntiClockwise(centre)
+		r.pixels[i].rotateAntiClockwise(centre)
 	}
 }
 
-func (r *Piece) MoveDown() {
+func (r *Piece) moveDown() {
 
 	GetFileLogger().Println("Move Down")
 
 	for i := range r.pixels {
-		r.pixels[i].MoveDown()
+		r.pixels[i].moveDown()
 	}
 }
-func (r *Piece) MoveLeft() {
+func (r *Piece) moveLeft() {
 
 	GetFileLogger().Println("Move Left")
 
 	for i := range r.pixels {
-		r.pixels[i].MoveLeft()
+		r.pixels[i].moveLeft()
 	}
 }
-func (r *Piece) MoveRight() {
+func (r *Piece) moveRight() {
 
 	GetFileLogger().Println("Move Right")
 
 	for i := range r.pixels {
-		r.pixels[i].MoveRight()
+		r.pixels[i].moveRight()
 	}
 }
 
@@ -268,17 +269,17 @@ func (r *Piece) String() string {
 }
 
 type serverSession struct {
-	player         Player
-	moveQueue      chan shared.MoveType
-	gameQueue      chan GameState
-	gameOverSignal chan bool
-	activePiece    Piece
-	lines          Lines
-	nextPiece      Piece
-	gameOver       bool
-	score          int
-	board          shared.Board
-	startSeconds   int64
+	player       Player
+	moveQueue    chan shared.MoveType
+	gameQueue    chan GameState
+	activePiece  Piece
+	lines        Lines
+	nextPiece    Piece
+	gameOver     bool
+	lineCount    int
+	pieceCount   int
+	board        shared.Board
+	startSeconds int64
 }
 
 type Player struct {
@@ -305,7 +306,7 @@ func (r *Pixel) add(p Pixel) {
 	r.Y = r.Y + p.Y
 }
 
-func (r *Pixel) RotateClockwise(centre Pixel) {
+func (r *Pixel) rotateClockwise(centre Pixel) {
 	r.subtract(centre)
 	newX := 0 - r.Y
 	r.Y = r.X
@@ -313,7 +314,7 @@ func (r *Pixel) RotateClockwise(centre Pixel) {
 	r.add(centre)
 }
 
-func (r *Pixel) RotateAntiClockwise(centre Pixel) {
+func (r *Pixel) rotateAntiClockwise(centre Pixel) {
 	r.subtract(centre)
 	newY := 0 - r.X
 	r.X = r.Y
@@ -321,15 +322,15 @@ func (r *Pixel) RotateAntiClockwise(centre Pixel) {
 	r.add(centre)
 }
 
-func (r *Pixel) MoveDown() {
+func (r *Pixel) moveDown() {
 	r.Y = r.Y + 1
 }
 
-func (r *Pixel) MoveLeft() {
+func (r *Pixel) moveLeft() {
 	r.X = r.X - 1
 }
 
-func (r *Pixel) MoveRight() {
+func (r *Pixel) moveRight() {
 	r.X = r.X + 1
 }
 
@@ -338,7 +339,7 @@ func (r *serverSession) MoveActivePieceDownIfPossible() bool {
 	ap := r.activePiece
 
 	pieceCopy := ap.Clone()
-	pieceCopy.MoveDown()
+	pieceCopy.moveDown()
 
 	if isMovePossible(r, pieceCopy) {
 		r.activePiece = *pieceCopy
@@ -353,7 +354,7 @@ func (r *serverSession) MoveActivePieceRightIfPossible() bool {
 	ap := r.activePiece
 
 	pieceCopy := ap.Clone()
-	pieceCopy.MoveRight()
+	pieceCopy.moveRight()
 
 	if isMovePossible(r, pieceCopy) {
 		r.activePiece = *pieceCopy
@@ -368,7 +369,7 @@ func (r *serverSession) MoveActivePieceLeftIfPossible() bool {
 	ap := r.activePiece
 
 	pieceCopy := ap.Clone()
-	pieceCopy.MoveLeft()
+	pieceCopy.moveLeft()
 
 	if isMovePossible(r, pieceCopy) {
 		r.activePiece = *pieceCopy
@@ -383,7 +384,7 @@ func (r *serverSession) RotateActivePieceClockwiseIfPossible() bool {
 	ap := r.activePiece
 
 	pieceCopy := ap.Clone()
-	pieceCopy.RotateClockwise()
+	pieceCopy.rotateClockwise()
 
 	if isMovePossible(r, pieceCopy) {
 		r.activePiece = *pieceCopy
@@ -398,7 +399,7 @@ func (r *serverSession) RotateActivePieceAnticlockwiseIfPossible() bool {
 	ap := r.activePiece
 
 	pieceCopy := ap.Clone()
-	pieceCopy.RotateAnticlockwise()
+	pieceCopy.rotateAnticlockwise()
 
 	if isMovePossible(r, pieceCopy) {
 		r.activePiece = *pieceCopy

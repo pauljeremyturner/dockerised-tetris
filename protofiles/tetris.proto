@@ -18,10 +18,11 @@ message GameUpdateResponse {
   string uuid = 1;
   string playerName = 2;
   bool gameOver = 3;
-  uint32 score = 4;
-  int64 duration = 5;
-  repeated Square squares = 6;
-  repeated Square nextPiece = 7;
+  uint32 lines = 4;
+  uint32 pieces = 5;
+  int64 duration = 6;
+  repeated Square squares = 7;
+  repeated Square nextPiece =  8;
 }
 
 message MoveResponse {

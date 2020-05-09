@@ -11,15 +11,15 @@ type Logger struct {
 }
 
 const (
-	MOVELEFT    = 's'
-	MOVERIGHT   = 'd'
-	ROTATELEFT  = 'a'
-	ROTATERIGHT = 'f'
-	DROP        = 'e'
-	DOWN        = 'x'
+	MOVELEFT    MoveType = 's'
+	MOVERIGHT   MoveType = 'd'
+	ROTATELEFT  MoveType = 'a'
+	ROTATERIGHT MoveType = 'f'
+	DROP        MoveType = 'e'
+	DOWN        MoveType = 'x'
 
 	BOARDSIZEX = 20
-	BOARDSIZEY = 16
+	BOARDSIZEY = 17
 )
 
 type Board struct {

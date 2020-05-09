@@ -85,7 +85,8 @@ func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
 			Pixels:    make([]Pixel, 0),
 			NextPiece: make([]Pixel, 0),
 			GameOver:  gameUpdate.GameOver,
-			Score:     int(gameUpdate.Score),
+			Lines:     int(gameUpdate.Lines),
+			Pieces:    int(gameUpdate.Pieces),
 			Duration:  gameUpdate.Duration,
 		}
 

@@ -21,12 +21,11 @@ func main() {
 	}
 
 	ui = client.NewTetrisUi(clientSession)
-
 	tp = client.NewTetrisProto(clientSession)
 
 	go tp.ReceiveStream(uuid, "paul")
-
 	go tp.ListenToMove()
 	go ui.ListenToBoardUpdates()
+
 	ui.StartGame()
 }

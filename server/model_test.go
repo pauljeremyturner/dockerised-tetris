@@ -12,7 +12,7 @@ var centre = Pixel{0, 0, 0}
 func TestShouldRotateClockWise(t *testing.T) {
 
 	got := Pixel{2, 2, 1}
-	got.RotateClockwise(centre)
+	got.rotateClockwise(centre)
 
 	want := Pixel{-2, 2, 0}
 
@@ -23,7 +23,7 @@ func TestShouldRotateClockWise(t *testing.T) {
 func TestShouldRotateAnticlockwise(t *testing.T) {
 
 	got := Pixel{2, 2, 1}
-	got.RotateAntiClockwise(centre)
+	got.rotateAntiClockwise(centre)
 
 	want := Pixel{2, -2, 0}
 
@@ -34,7 +34,7 @@ func TestShouldRotateAnticlockwise(t *testing.T) {
 func TestShouldMoveLeft(t *testing.T) {
 
 	got := Pixel{2, 2, 1}
-	got.MoveLeft()
+	got.moveLeft()
 
 	want := Pixel{1, 2, 0}
 
@@ -45,7 +45,7 @@ func TestShouldMoveLeft(t *testing.T) {
 func TestShouldMoveRight(t *testing.T) {
 
 	got := Pixel{2, 2, 1}
-	got.MoveRight()
+	got.moveRight()
 
 	want := Pixel{3, 2, 0}
 
@@ -56,7 +56,7 @@ func TestShouldMoveRight(t *testing.T) {
 func TestShouldMoveDown(t *testing.T) {
 
 	got := Pixel{2, 2, 1}
-	got.MoveDown()
+	got.moveDown()
 
 	want := Pixel{2, 3, 0}
 

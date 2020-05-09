@@ -6,13 +6,8 @@ import (
 	"time"
 )
 
-const (
-	port = ":50051"
-)
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	tetris := server.NewTetris()
 	server.StartProtoServer(tetris)
-
 }
