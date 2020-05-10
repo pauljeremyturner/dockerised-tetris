@@ -11,16 +11,14 @@ import (
 func TestShouldMoveDownPeriodically(t *testing.T) {
 	u, _ := uuid.NewRandom()
 	mq := make(chan shared.MoveType, 5)
-	ss := &ServerSession{
+	ss := &serverSession{
 		player:         Player{u, "player"},
 		moveQueue:      mq,
 		gameQueue:      nil,
-		gameOverSignal: nil,
 		activePiece:    NewI(),
 		lines:          Lines{},
 		nextPiece:      NewI(),
 		gameOver:       false,
-		score:          0,
 	}
 
 	go tick(ss)
