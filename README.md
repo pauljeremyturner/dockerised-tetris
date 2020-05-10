@@ -29,8 +29,8 @@ Then run the game client
 `x` Move down
 `e` Drop
 
+<img src="./doc/tetris-animated.gif" width="436" height="600">
 
-![](./doc/tetris-animated.gif =436x600)
 
 ## Work in progress
 
