@@ -30,7 +30,7 @@ Then run the game client
 `e` Drop
 
 
-![Alt text](doc/tetris-animated.gif=436x600)
+![Alt text](doc/tetris-animated.gif =436x600)
 
 ## Work in progress
 
