@@ -11,17 +11,28 @@ message NewGameRequest {
 message Square {
   uint32 x = 1;
   uint32 y = 2;
-  uint32 color = 3;
+  enum ColorEnum {
+    MAGENTA = 0;
+    CYAN = 1;
+    YELLOW = 2;
+    GREEN = 3;
+    BLUE = 4;
+    RED = 5;
+    WHITE = 6;
+    BLACK = 7;
+  }
+  ColorEnum color = 3;
 }
 
 message GameUpdateResponse {
   string uuid = 1;
   string playerName = 2;
   bool gameOver = 3;
-  uint32 score = 4;
-  int64 duration = 5;
-  repeated Square squares = 6;
-  repeated Square nextPiece = 7;
+  uint32 lines = 4;
+  uint32 pieces = 5;
+  int64 duration = 6;
+  repeated Square squares = 7;
+  repeated Square nextPiece =  8;
 }
 
 message MoveResponse {

@@ -30,7 +30,6 @@ func (r *tetris) StartNewGame(player Player) *serverSession {
 		player:         player,
 		moveQueue:      make(chan shared.MoveType, 10),
 		gameQueue:      make(chan GameState, 10),
-		gameOverSignal: nil,
 		activePiece:    RandomPiece(),
 		lines:          Lines{lineMap: make(map[int][]Pixel)},
 		nextPiece:      RandomPiece(),
@@ -82,10 +81,11 @@ func gameState(ss *serverSession) GameState {
 		allPixels = append(allPixels, lps...)
 	}
 	return GameState{
-		Score:     ss.score,
+		LineCount: ss.lineCount,
 		Pixels:    allPixels,
 		NextPiece: ss.nextPiece.pixels,
 		GameOver:  ss.gameOver,
+		PieceCount: ss.pieceCount,
 		Duration:  time.Now().Unix() - ss.startSeconds,
 	}
 
@@ -106,8 +106,9 @@ func nextPiece(ss *serverSession) {
 		}
 	}
 
-	ss.lines.Compact(ss.board)
-
+	ss.pieceCount = ss.pieceCount + 1
+	compactedLines := ss.lines.Compact(ss.board)
+	ss.lineCount = ss.lineCount + compactedLines
 	ss.activePiece = ss.nextPiece
 	ss.nextPiece = RandomPiece()
 }
@@ -117,10 +118,6 @@ func redraw(ss *serverSession) {
 	for r := range ss.moveQueue {
 
 		GetFileLogger().Printf("Enqueue game update game for Player: %s", ss.player.uuid)
-
-		GetFileLogger().Println("compare command with commands", r, shared.MOVERIGHT)
-		GetFileLogger().Println("compare command with commands", r == shared.MOVERIGHT)
-
 		GetFileLogger().Printf("Active Piece Before Move piece: %s move: %s", ss.activePiece.String(), string(r))
 
 		var pieceMoved bool

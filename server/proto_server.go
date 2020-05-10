@@ -49,17 +49,21 @@ func (s *protoServer) StartGame(in *pf.NewGameRequest, stream pf.StartGame_Start
 
 	for gs := range ss.gameQueue {
 
-		GetFileLogger().Println("Receive board update")
-
-		if err := stream.Send(&pf.GameUpdateResponse{
+		gameUpdateResponse := &pf.GameUpdateResponse{
 			Uuid:       in.Uuid,
 			PlayerName: in.PlayerName,
 			GameOver:   gs.GameOver,
-			Score:      uint32(gs.Score),
+			Lines:      uint32(gs.LineCount),
+			Pieces:     uint32(gs.PieceCount),
 			Duration:   gs.Duration,
 			Squares:    pixelsToSquares(gs.Pixels),
 			NextPiece:  pixelsToSquares(gs.NextPiece),
-		}); err != nil {
+		}
+
+		GetFileLogger().Println("Receive board update, sending", gameUpdateResponse.String())
+
+
+		if err := stream.Send(gameUpdateResponse); err != nil {
 			fmt.Printf("something went wrong %s", err)
 		}
 
@@ -105,9 +109,33 @@ func pixelsToSquares(pixels []Pixel) []*pf.Square {
 		squares = append(squares, &pf.Square{
 			X:     uint32(p.X),
 			Y:     uint32(p.Y),
-			Color: uint32(p.Color),
+			Color: colorToProto(p.Color),
 		})
 	}
 
 	return squares
+}
+
+func colorToProto(c int) pf.Square_ColorEnum {
+
+	switch c {
+	case 0:
+		return pf.Square_MAGENTA
+	case 1:
+		return pf.Square_CYAN
+	case 2:
+		return pf.Square_YELLOW
+	case 3:
+		return pf.Square_BLUE
+	case 4:
+		return pf.Square_GREEN
+	case 5:
+		return pf.Square_RED
+	case 6:
+		return pf.Square_WHITE
+	default:
+		return pf.Square_BLACK
+	}
+
+
 }

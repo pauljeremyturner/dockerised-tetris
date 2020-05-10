@@ -11,8 +11,33 @@ type GameState struct {
 	Pixels    []Pixel
 	NextPiece []Pixel
 	GameOver  bool
-	Score     int
+	Lines     int
+	Pieces    int
 	Duration  int64
+}
+
+type Pixel struct {
+	X       int
+	Y       int
+	Color termbox.Attribute
+}
+
+func (r *GameState) String() string {
+	var s = "Pixels:"
+	for _, pix := range r.Pixels {
+		s = s + pix.String()
+	}
+	s = s + "\nNext Piece:"
+	for _, pix := range r.NextPiece {
+		s = s + pix.String()
+	}
+	s = s + "\nPiece Count:" + string(r.Pieces)
+	s = s + "\nLine Count Count:" + string(r.Lines)
+	return s
+}
+
+func (r *Pixel) String() string {
+	return fmt.Sprintf("pixel, (%d, %d) color %d; ", r.X, r.Y, r.Color)
 }
 
 type ClientSession struct {
@@ -22,24 +47,6 @@ type ClientSession struct {
 	BoardUpdateChannel chan GameState
 }
 
-type Pixel struct {
-	X     int
-	Y     int
-	Color termbox.Attribute
-}
-
-func (r *GameState) String() string {
-	var s = "PIXELS:"
-	for _, pix := range r.Pixels {
-		s = s + fmt.Sprintf("pixel, (%d, %d) color %d; ", pix.X, pix.Y, pix.Color)
-	}
-	s = s + "\nNEXT PIECE:"
-	for _, pix := range r.NextPiece {
-		s = s + fmt.Sprintf("pixel, (%d, %d) color %d; ", pix.X, pix.Y, pix.Color)
-	}
-	return s
-}
-
-func (r *Pixel) String() string {
-	return fmt.Sprintf("pixel, (%d, %d) color %d; ", r.X, r.Y, r.Color)
+func (r ClientSession) String() string {
+	return fmt.Sprintf("ClientSession uuid: %s, PlayerName: %s", r.Uuid.String(), r.PlayerName)
 }

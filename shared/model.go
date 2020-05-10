@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -11,18 +12,22 @@ type Logger struct {
 }
 
 const (
-	MOVELEFT    = 's'
-	MOVERIGHT   = 'd'
-	ROTATELEFT  = 'a'
-	ROTATERIGHT = 'f'
-	DROP        = 'e'
-	DOWN        = 'x'
+	MOVELEFT    MoveType = 's'
+	MOVERIGHT   MoveType = 'd'
+	ROTATELEFT  MoveType = 'a'
+	ROTATERIGHT MoveType = 'f'
+	DROP        MoveType = 'e'
+	DOWN        MoveType = 'x'
 
-	BOARDSIZEX = 20
-	BOARDSIZEY = 16
+	BOARDSIZEX = 16
+	BOARDSIZEY = 18
 )
 
 type Board struct {
 	Height int
 	Width  int
+}
+
+func (r Board) String() string {
+	return fmt.Sprintf("Tetris board. Width: %d,  Height: %d", r.Width, r.Height)
 }
