@@ -55,3 +55,6 @@ DONE
 
 DT-5
 introduce-google-wire-for-dependency-injection Work in progress
+
+DT-7
+~~BUG ensure proto session closed, channels closed and ui quits after gameover signal~~
