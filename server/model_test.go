@@ -70,20 +70,18 @@ func TestPieceAtEndWhenOffBoardY(t *testing.T) {
 		pixels: []Pixel{Pixel{X: 0, Y: 10, Color: 0}},
 	}
 	u, _ := uuid.NewRandom()
-	ss := ServerSession{
+	ss := serverSession{
 		player:         Player{u, "test"},
 		moveQueue:      nil,
 		gameQueue:      nil,
-		gameOverSignal: nil,
 		activePiece:    p,
 		lines:          Lines{},
 		nextPiece:      Piece{},
 		gameOver:       false,
-		score:          0,
 		board:          shared.Board{10, 10},
 	}
 
-	assert.Assert(t, ss.isPieceAtEnd())
+	assert.Assert(t, !ss.MoveActivePieceDownIfPossible())
 }
 
 func TestPieceAtEndWhenBlockedByLineY(t *testing.T) {
@@ -96,20 +94,18 @@ func TestPieceAtEndWhenBlockedByLineY(t *testing.T) {
 	lines := make(map[int][]Pixel)
 	lines[10] = []Pixel{Pixel{X: 4, Y: 10, Color: 0}}
 
-	ss := ServerSession{
+	ss := serverSession{
 		player:         Player{u, "test"},
 		moveQueue:      nil,
 		gameQueue:      nil,
-		gameOverSignal: nil,
 		activePiece:    p,
 		lines:          Lines{},
 		nextPiece:      Piece{},
 		gameOver:       false,
-		score:          0,
 		board:          shared.Board{10, 10},
 	}
 
-	assert.Assert(t, ss.isPieceAtEnd())
+	assert.Assert(t, !ss.MoveActivePieceDownIfPossible())
 }
 
 func TestMovePossibleWhenNotBlockedByLineY(t *testing.T) {
@@ -122,18 +118,16 @@ func TestMovePossibleWhenNotBlockedByLineY(t *testing.T) {
 	lines := make(map[int][]Pixel)
 	lines[10] = []Pixel{Pixel{X: 4, Y: 10, Color: 0}}
 
-	ss := ServerSession{
+	ss := serverSession{
 		player:         Player{u, "test"},
 		moveQueue:      nil,
 		gameQueue:      nil,
-		gameOverSignal: nil,
 		activePiece:    p,
 		lines:          Lines{},
 		nextPiece:      Piece{},
 		gameOver:       false,
-		score:          0,
 		board:          shared.Board{10, 10},
 	}
 
-	assert.Assert(t, !ss.isPieceAtEnd())
+	assert.Assert(t, ss.MoveActivePieceDownIfPossible())
 }
