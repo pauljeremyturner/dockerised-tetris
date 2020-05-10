@@ -31,6 +31,9 @@ Then run the game client
 
 <img src="./doc/tetris-animated.gif" width="436" height="600">
 
+## Does it work with Windows
+
+No, sorry
 
 ## Work in progress
 
