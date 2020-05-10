@@ -49,3 +49,6 @@ DONE
 DT-4
 ~~implement matrix algebra for piece rotations, provide a way to define coordinates of pieces~~
 DONE
+
+DT-5
+introduce-google-wire-for-dependency-injection Work in progress
