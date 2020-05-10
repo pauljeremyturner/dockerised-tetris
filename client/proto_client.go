@@ -107,23 +107,23 @@ func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
 
 }
 
-func convertColor(i uint32) termbox.Attribute {
+func convertColor(ce pf.Square_ColorEnum) termbox.Attribute {
 	var c termbox.Attribute
-	switch i {
-	case 1:
+	switch ce {
+	case pf.Square_MAGENTA:
 		c = termbox.ColorMagenta
-	case 2:
-		c = termbox.ColorRed
-	case 3:
-		c = termbox.ColorGreen
-	case 4:
+	case pf.Square_CYAN:
 		c = termbox.ColorCyan
-	case 5:
-		c = termbox.ColorWhite
-	case 6:
+	case pf.Square_YELLOW:
 		c = termbox.ColorYellow
-	case 7:
+	case pf.Square_BLUE:
 		c = termbox.ColorBlue
+	case pf.Square_RED:
+		c = termbox.ColorRed
+	case pf.Square_WHITE:
+		c = termbox.ColorWhite
+	case pf.Square_BLACK:
+		c = termbox.ColorBlack
 	default:
 		c = termbox.ColorDefault
 	}

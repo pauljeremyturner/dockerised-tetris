@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -18,11 +19,15 @@ const (
 	DROP        MoveType = 'e'
 	DOWN        MoveType = 'x'
 
-	BOARDSIZEX = 20
-	BOARDSIZEY = 17
+	BOARDSIZEX = 16
+	BOARDSIZEY = 18
 )
 
 type Board struct {
 	Height int
 	Width  int
+}
+
+func (r Board) String() string {
+	return fmt.Sprintf("Tetris board. Width: %d,  Height: %d", r.Width, r.Height)
 }

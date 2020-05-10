@@ -9,17 +9,13 @@ import (
 )
 
 const (
-	backgroundColor   = termbox.ColorBlack
-	boardColor        = termbox.ColorBlack
-	instructionsColor = termbox.ColorYellow
 
 	originXBoard = 2
-	originYBoard = 13
+	originYBoard = 10
 
-	originXNextPiece = 10
-	originYNextPiece = 10
+	originXNextPiece = 15
+	originYNextPiece = 6
 
-	BLOCK       = '▇'
 	HORIZONTAL  = '═'
 	VERTICAL    = '║'
 	TOPLEFT     = '╔'
@@ -61,7 +57,7 @@ func (r TetrisUi) StartGame() {
 
 	defer termbox.Close()
 
-	drawBorder(0, 0, 45, 30)
+	drawBorder(0, 0, 35, 30)
 	r.writeMessage("tetris://", 2, 2, termbox.ColorWhite)
 
 	termbox.Flush()
@@ -76,26 +72,27 @@ func (r TetrisUi) ListenToBoardUpdates() {
 		r.appLog.Printf("Board Update: %s", gm.String())
 
 		if gm.GameOver {
-			r.writeMessage("GAME OVER", 1, 5, termbox.ColorWhite)
+			r.writeMessage("GAME OVER", 2, 5, termbox.ColorWhite)
 			termbox.Flush()
 			break
 		}
 
-		for x := originXBoard - 1; x < originXBoard+r.board.Width - 1; x++ {
-			for y := originYBoard; y < originYBoard+r.board.Height; y++ {
-				r.clearBoardPixel(Pixel{x, y, 0})
+		for x := 0; x < r.board.Width; x++ {
+			for y := 0; y < r.board.Height; y++ {
+				r.drawBoardPixel(Pixel{X:x, Y:y, Color: termbox.ColorDefault})
 			}
 		}
 
-		for x := originXNextPiece; x < originXNextPiece+3; x++ {
-			for y := originYNextPiece; y < originYNextPiece+3; y++ {
-				r.clearBoardPixel(Pixel{x, y, 0})
+		for x := 0; x < 4; x++ {
+			for y := 0; y < 4; y++ {
+				r.drawNextPiecePixel(Pixel{X:x, Y:y, Color: termbox.ColorDefault})
 			}
 		}
 
 		r.writeMessage(fmt.Sprintf("player: %s", r.playerSession.PlayerName), 2, 3, termbox.ColorWhite)
 		r.writeMessage(fmt.Sprintf("pieces: %d", gm.Pieces), 2, 4, termbox.ColorWhite)
 		r.writeMessage(fmt.Sprintf("lines: %d", gm.Lines), 2, 5, termbox.ColorWhite)
+		r.writeMessage(fmt.Sprintf("next piece:"), 2, 6, termbox.ColorWhite)
 
 		for _, p := range gm.Pixels {
 			r.drawBoardPixel(p)
@@ -108,8 +105,10 @@ func (r TetrisUi) ListenToBoardUpdates() {
 }
 
 func (r TetrisUi) String() string {
-	return "tetris" //do more here!
+	return fmt.Sprintf("Tetris client: playerSession: %s, board: %s", r.playerSession.String(), r.board.String())
 }
+
+
 
 func (r TetrisUi) readKey() {
 	switch ev := termbox.PollEvent(); ev.Type {
@@ -148,38 +147,12 @@ func (r TetrisUi) onKeyPress(event termbox.Event) {
 	}
 }
 
-func (r TetrisUi) clearBoardPixel(p Pixel) {
 
-	//r.appLog.Println("draw board pixel ", p)
-
-	termbox.SetCell((2 * p.X), p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell((2*p.X + 1), p.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
-}
 func (r TetrisUi) drawBoardPixel(p Pixel) {
 
-	r.appLog.Println("draw board pixel ", p)
-	var c termbox.Attribute
-	switch p.Color {
-	case 1:
-		c = termbox.ColorMagenta
-	case 2:
-		c = termbox.ColorRed
-	case 3:
-		c = termbox.ColorGreen
-	case 4:
-		c = termbox.ColorCyan
-	case 5:
-		c = termbox.ColorWhite
-	case 6:
-		c = termbox.ColorYellow
-	case 7:
-		c = termbox.ColorBlue
-	default:
-		c = termbox.ColorDefault
-	}
-
-	termbox.SetCell(originXBoard+(2*p.X), originYBoard+p.Y, ' ', termbox.ColorDefault, c)
-	termbox.SetCell(originXBoard+(2*p.X+1), originYBoard+p.Y, ' ', termbox.ColorDefault, c)
+	//r.appLog.Println("draw board pixel ", p)
+	termbox.SetCell(originXBoard+(2*p.X), originYBoard+p.Y, ' ', p.Color, p.Color)
+	termbox.SetCell(originXBoard+(2*p.X+1), originYBoard+p.Y, ' ', p.Color, p.Color)
 }
 
 func (r TetrisUi) writeMessage(message string, x int, y int, color termbox.Attribute) {
@@ -193,28 +166,10 @@ func (r TetrisUi) writeMessage(message string, x int, y int, color termbox.Attri
 
 func (r TetrisUi) drawNextPiecePixel(p Pixel) {
 	r.appLog.Println("draw next piece pixel ", p)
-	var c termbox.Attribute
-	switch p.Color {
-	case 1:
-		c = termbox.ColorMagenta
-	case 2:
-		c = termbox.ColorRed
-	case 3:
-		c = termbox.ColorGreen
-	case 4:
-		c = termbox.ColorCyan
-	case 5:
-		c = termbox.ColorWhite
-	case 6:
-		c = termbox.ColorYellow
-	case 7:
-		c = termbox.ColorBlue
-	default:
-		c = termbox.ColorDefault
-	}
 
-	termbox.SetCell(originXNextPiece+(2*p.X), originXNextPiece+p.Y, ' ', termbox.ColorDefault, c)
-	termbox.SetCell(originYNextPiece+(2*p.X+1), originYNextPiece+p.Y, ' ', termbox.ColorDefault, c)
+
+	termbox.SetCell(originXNextPiece+(2*p.X), originYNextPiece+p.Y, ' ', p.Color, p.Color)
+	termbox.SetCell(originXNextPiece+(2*p.X+1), originYNextPiece+p.Y, ' ', p.Color, p.Color)
 }
 
 func drawBorder(leftEdge int, topEdge int, width int, height int) {

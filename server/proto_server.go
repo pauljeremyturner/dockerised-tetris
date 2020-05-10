@@ -109,9 +109,33 @@ func pixelsToSquares(pixels []Pixel) []*pf.Square {
 		squares = append(squares, &pf.Square{
 			X:     uint32(p.X),
 			Y:     uint32(p.Y),
-			Color: uint32(p.Color),
+			Color: colorToProto(p.Color),
 		})
 	}
 
 	return squares
+}
+
+func colorToProto(c int) pf.Square_ColorEnum {
+
+	switch c {
+	case 0:
+		return pf.Square_MAGENTA
+	case 1:
+		return pf.Square_CYAN
+	case 2:
+		return pf.Square_YELLOW
+	case 3:
+		return pf.Square_BLUE
+	case 4:
+		return pf.Square_GREEN
+	case 5:
+		return pf.Square_RED
+	case 6:
+		return pf.Square_WHITE
+	default:
+		return pf.Square_BLACK
+	}
+
+
 }

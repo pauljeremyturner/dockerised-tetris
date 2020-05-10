@@ -161,6 +161,21 @@ func (r *Piece) moveRight() {
 	}
 }
 
+
+func NewO() Piece {
+	/**
+	  XX
+	  XX
+	*/
+	pixels := []Pixel{
+		{X: 1, Y: 0, Color: 0},
+		{X: 0, Y: 0, Color: 0},
+		{X: 0, Y: 1, Color: 0},
+		{X: 1, Y: 1, Color: 0},
+	}
+	return newPiece(pixels)
+}
+
 func NewI() Piece {
 	/*
 	   XXXXXX
@@ -242,20 +257,6 @@ func NewZ() Piece {
 		{X: 0, Y: 1, Color: 6},
 		{X: 1, Y: 0, Color: 6},
 		{X: 2, Y: 0, Color: 6},
-	}
-	return newPiece(pixels)
-}
-
-func NewO() Piece {
-	/**
-	  XX
-	  XX
-	*/
-	pixels := []Pixel{
-		{X: 1, Y: 0, Color: 7},
-		{X: 0, Y: 0, Color: 7},
-		{X: 0, Y: 1, Color: 7},
-		{X: 1, Y: 1, Color: 7},
 	}
 	return newPiece(pixels)
 }
