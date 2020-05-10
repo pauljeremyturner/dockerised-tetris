@@ -26,7 +26,7 @@ func main() {
 
 	go tp.ReceiveStream(uuid, "paul")
 	go tp.ListenToMove()
-	go ui.ListenToBoardUpdates()
 
 	ui.StartGame()
+
 }
