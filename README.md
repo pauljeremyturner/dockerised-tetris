@@ -30,7 +30,7 @@ Then run the game client
 `e` Drop
 
 
-![Alt text](doc/tetris-animated?raw=true "Title")
+![Alt text](doc/tetris-animated.gif?raw=true "Title")
 
 ## Work in progress
 
