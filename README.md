@@ -1,5 +1,5 @@
-# dockerised-tetris
-A terminal client communicates with a Tetris game engine.
+# proto-tetris
+A terminal client communicates with a Tetris game engine via grpc.
 
 ## What is this?
 An implementation of the classic Tetris game.  The game engine sends pixel information to the client.
