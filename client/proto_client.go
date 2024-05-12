@@ -4,19 +4,20 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/nsf/termbox-go"
+	"go.uber.org/zap"
 	"io"
 	"log"
 
-	pf "github.com/pauljeremyturner/dockerised-tetris/protofiles"
+	"github.com/pauljeremyturner/dockerised-tetris/protogen"
 	"github.com/pauljeremyturner/dockerised-tetris/shared"
 	"google.golang.org/grpc"
 )
 
 type ProtoClientState struct {
-	appLog          *Logger
-	playerSession   ClientSession
-	startGameClient pf.StartGameClient
-	moveClient      pf.MoveClient
+	playerSession ClientSession
+	tetrisClient  protogen.GameClient
+	moveClient    protogen.MoveClient
+	sugar         *zap.SugaredLogger
 }
 
 var (
@@ -28,7 +29,7 @@ type ProtoClient interface {
 	ReceiveStream(uuid uuid.UUID, playerName string)
 }
 
-func NewTetrisProto(session *ClientSession) ProtoClient {
+func NewTetrisProto(session *ClientSession, suagr *zap.SugaredLogger) ProtoClient {
 
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 
@@ -38,37 +39,35 @@ func NewTetrisProto(session *ClientSession) ProtoClient {
 	}
 
 	return &ProtoClientState{
-		appLog:          GetFileLogger(),
-		playerSession:   *session,
-		startGameClient: pf.NewStartGameClient(conn),
-		moveClient:      pf.NewMoveClient(conn),
+		sugar:         suagr,
+		playerSession: *session,
+		tetrisClient:  protogen.NewGameClient(conn),
+		moveClient:    protogen.NewMoveClient(conn),
 	}
 }
 
 func (pcs ProtoClientState) ListenToMove() {
 
-	appLog.Println("Listen to Moves")
-
 	for mt := range pcs.playerSession.MoveChannel {
 
-		in := &pf.MoveRequest{
+		in := &protogen.MoveRequest{
 			Uuid: pcs.playerSession.Uuid.String(),
 			Move: moveTypeToProto(mt),
 		}
-		appLog.Println("Sending Move, ", in)
 		pcs.moveClient.Move(context.Background(), in)
 
 	}
 }
 
 func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
-	request := &pf.NewGameRequest{
+	request := &protogen.NewGameRequest{
 		Uuid:       uuid.String(),
 		PlayerName: playerName,
 	}
-	stream, err := pcs.startGameClient.StartGame(context.Background(), request)
+
+	stream, err := pcs.tetrisClient.StartGame(context.TODO(), request)
 	if err != nil {
-		appLog.Fatalf("%v.StartGame(_) = _, %v", pcs.startGameClient, err)
+
 	}
 	// Listen to the stream of messages
 	for {
@@ -77,7 +76,6 @@ func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
 			break
 		}
 		if err != nil {
-			appLog.Println("StartGame state, error", pcs.startGameClient, err)
 			break
 		}
 
@@ -89,8 +87,6 @@ func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
 			Pieces:    int(gameUpdate.Pieces),
 			Duration:  gameUpdate.Duration,
 		}
-
-		appLog.Println("Game over?", gs.GameOver)
 
 		for _, sq := range gameUpdate.Squares {
 			pixel := Pixel{X: int(sq.X), Y: int(sq.Y), Color: convertColor(sq.Color)}
@@ -107,22 +103,22 @@ func (pcs ProtoClientState) ReceiveStream(uuid uuid.UUID, playerName string) {
 
 }
 
-func convertColor(ce pf.Square_ColorEnum) termbox.Attribute {
+func convertColor(ce protogen.Square_ColorEnum) termbox.Attribute {
 	var c termbox.Attribute
 	switch ce {
-	case pf.Square_MAGENTA:
+	case protogen.Square_MAGENTA:
 		c = termbox.ColorMagenta
-	case pf.Square_CYAN:
+	case protogen.Square_CYAN:
 		c = termbox.ColorCyan
-	case pf.Square_YELLOW:
+	case protogen.Square_YELLOW:
 		c = termbox.ColorYellow
-	case pf.Square_BLUE:
+	case protogen.Square_BLUE:
 		c = termbox.ColorBlue
-	case pf.Square_RED:
+	case protogen.Square_RED:
 		c = termbox.ColorRed
-	case pf.Square_WHITE:
+	case protogen.Square_WHITE:
 		c = termbox.ColorWhite
-	case pf.Square_BLACK:
+	case protogen.Square_BLACK:
 		c = termbox.ColorBlack
 	default:
 		c = termbox.ColorDefault
@@ -130,21 +126,21 @@ func convertColor(ce pf.Square_ColorEnum) termbox.Attribute {
 	return c
 }
 
-func moveTypeToProto(mt shared.MoveType) pf.MoveRequest_MoveEnum {
+func moveTypeToProto(mt shared.MoveType) protogen.MoveRequest_MoveEnum {
 
 	switch mt {
 	case shared.DOWN:
-		return pf.MoveRequest_DOWN
+		return protogen.MoveRequest_DOWN
 	case shared.DROP:
-		return pf.MoveRequest_DROP
+		return protogen.MoveRequest_DROP
 	case shared.ROTATERIGHT:
-		return pf.MoveRequest_ROTATERIGHT
+		return protogen.MoveRequest_ROTATERIGHT
 	case shared.ROTATELEFT:
-		return pf.MoveRequest_ROTATELEFT
+		return protogen.MoveRequest_ROTATELEFT
 	case shared.MOVERIGHT:
-		return pf.MoveRequest_MOVERIGHT
+		return protogen.MoveRequest_MOVERIGHT
 	case shared.MOVELEFT:
-		return pf.MoveRequest_MOVELEFT
+		return protogen.MoveRequest_MOVELEFT
 	default:
 		panic("fixme")
 	}

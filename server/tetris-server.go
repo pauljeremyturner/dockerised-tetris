@@ -1,100 +1,177 @@
 package server
 
 import (
-	"sync"
-	"time"
-
+	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/pauljeremyturner/dockerised-tetris/shared"
+	"go.uber.org/zap"
+	"sync"
+	"time"
 )
+
+var nextPieceFunc func() Piece
+
+func init() {
+	nextPieceFunc = RandomPiece
+}
 
 type tetris struct {
 	activeGames *sync.Map
-	board       shared.Board
+	sugar       *zap.SugaredLogger
 }
 
-func NewTetris() *tetris {
+type Tetris interface {
+	StartNewGame(player Player) ServerSession
+	GetGame(u uuid.UUID) ServerSession
+	EnqueueMove(u uuid.UUID, move shared.MoveType) error
+}
 
+func NewTetris(sugar *zap.SugaredLogger) *tetris {
 	return &tetris{
 		activeGames: &sync.Map{},
-		board: shared.Board{
-			Height: shared.BOARDSIZEY,
-			Width:  shared.BOARDSIZEX,
-		},
+		sugar:       sugar,
 	}
 }
 
-func (r *tetris) StartNewGame(player Player) *serverSession {
-
-	session := &serverSession{
-		player:         player,
-		moveQueue:      make(chan shared.MoveType, 10),
-		gameQueue:      make(chan GameState, 10),
-		activePiece:    RandomPiece(),
-		lines:          Lines{lineMap: make(map[int][]Pixel)},
-		nextPiece:      RandomPiece(),
-		gameOver:       false,
-		board:          r.board,
-		startSeconds:   time.Now().Unix(),
-	}
-
-	GetFileLogger().Println("New Game", player.uuid.String())
-	r.activeGames.Store(player.uuid.String(), *session)
-
-	go redraw(session)
-	go tick(session)
-
-	return session
-
-}
-
-func (r *tetris) EnqueueMove(u uuid.UUID, move shared.MoveType) {
-
-	GetFileLogger().Printf("Queue MoveType: %s to tetris engine player:%s", u.String(), string(move))
-
+func (r *tetris) GetGame(u uuid.UUID) (ServerSession, error) {
 	ss, ok := r.activeGames.Load(u)
 	if ok {
-		serverSession := ss.(*serverSession)
-		serverSession.moveQueue <- move
-	} else {
-		GetFileLogger().Printf("Client Error: uuid for active game not found, uuid: %s", u)
+		serverSession := ss.(ServerSession)
+		return serverSession, nil
+	}
+
+	return nil, NewErrorInvalidRequest("game not found", nil)
+}
+
+func (r *tetris) StartNewGame(player Player) ServerSession {
+
+	s := NewServerSession(player, r)
+
+	r.sugar.Infof("New Game, name :%s, UUID: %s", player.Name, player.UUID.String())
+	r.activeGames.Store(player.UUID.String(), s)
+
+	go s.Redraw()
+	go s.Tick()
+
+	return s
+
+}
+
+func (r *tetris) EnqueueMove(u uuid.UUID, move shared.MoveType) error {
+
+	r.sugar.Infof("Move.  player UUID: %s, move: %s", u, move.String())
+
+	ss, err := r.GetGame(u)
+	if err != nil {
+		return fmt.Errorf("could not find game, cause: %w", err)
+	}
+	ss.Move(move)
+
+	return nil
+
+}
+
+type serverSession struct {
+	tetris       *tetris
+	player       Player
+	moveQueue    chan shared.MoveType
+	gameQueue    chan GameState
+	activePiece  Piece
+	lines        Lines
+	nextPiece    Piece
+	gameOver     bool
+	lineCount    int
+	pieceCount   int
+	board        shared.Board
+	startSeconds int64
+	sugar        *zap.SugaredLogger
+}
+
+func NewServerSession(player Player, tetris *tetris) ServerSession {
+	return &serverSession{
+		activePiece:  RandomPiece(),
+		board:        shared.Board{Width: shared.BOARDSIZEX, Height: shared.BOARDSIZEY},
+		gameOver:     false,
+		gameQueue:    make(chan GameState, 10),
+		lines:        Lines{lineMap: make(map[int][]Pixel)},
+		moveQueue:    make(chan shared.MoveType, 10),
+		nextPiece:    nextPieceFunc(),
+		player:       player,
+		startSeconds: time.Now().Unix(),
+		sugar:        tetris.sugar,
+		tetris:       tetris,
 	}
 }
 
-func tick(ss *serverSession) {
+type CompletedMovePublisher interface {
+	PublishCompletedMove(ctx context.Context, gs GameState) error
+}
+
+type ServerSession interface {
+	GetGameState() GameState
+	GetPlayer() Player
+	IsGameOver() bool
+	Move(move shared.MoveType)
+	PublishCompletedMoves(ctx context.Context, p CompletedMovePublisher) error
+	Redraw()
+	Tick()
+}
+
+func (s *serverSession) GetPlayer() Player {
+	return s.player
+}
+
+func (s *serverSession) PublishCompletedMoves(ctx context.Context, pub CompletedMovePublisher) error {
+	for gs := range s.gameQueue {
+		err := pub.PublishCompletedMove(ctx, gs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *serverSession) IsGameOver() bool {
+	return s.gameOver
+}
+func (s *serverSession) Move(move shared.MoveType) {
+	s.moveQueue <- move
+}
+func (s *serverSession) Tick() {
 
 	for time := range time.Tick(1 * time.Second) {
-		if ss.gameOver {
+		if s.gameOver {
 			break
 		}
-		GetFileLogger().Printf("Tick game for Player: %s at time: %s", ss.player.uuid, time.String())
+		s.tetris.sugar.Infof("Tick game for Player: %s at time: %s", s.player.UUID, time.String())
 
-		ss.moveQueue <- shared.DOWN
+		s.moveQueue <- shared.DOWN
 	}
 }
 
-func gameState(ss *serverSession) GameState {
+func (s *serverSession) GetGameState() GameState {
 
 	allPixels := make([]Pixel, 0)
-	allPixels = append(allPixels, ss.activePiece.pixels...)
-	for _, lps := range ss.lines.lineMap {
+	allPixels = append(allPixels, s.activePiece.pixels...)
+	for _, lps := range s.lines.lineMap {
 		allPixels = append(allPixels, lps...)
 	}
 	return GameState{
-		LineCount: ss.lineCount,
-		Pixels:    allPixels,
-		NextPiece: ss.nextPiece.pixels,
-		GameOver:  ss.gameOver,
-		PieceCount: ss.pieceCount,
-		Duration:  time.Now().Unix() - ss.startSeconds,
+		LineCount:  s.lineCount,
+		Pixels:     allPixels,
+		NextPiece:  s.nextPiece.pixels,
+		GameOver:   s.gameOver,
+		PieceCount: s.pieceCount,
+		Duration:   time.Now().Unix() - s.startSeconds,
 	}
 
 }
 
-func nextPiece(ss *serverSession) {
+func (s *serverSession) ChooseNextPiece() {
 
-	lineMap := ss.lines.lineMap
-	for _, pp := range ss.activePiece.pixels {
+	lineMap := s.lines.lineMap
+	for _, pp := range s.activePiece.pixels {
 
 		if line, ok := lineMap[pp.Y]; ok {
 			line = append(line, pp)
@@ -106,57 +183,57 @@ func nextPiece(ss *serverSession) {
 		}
 	}
 
-	ss.pieceCount = ss.pieceCount + 1
-	compactedLines := ss.lines.Compact(ss.board)
-	ss.lineCount = ss.lineCount + compactedLines
-	ss.activePiece = ss.nextPiece
-	ss.nextPiece = RandomPiece()
+	s.pieceCount = s.pieceCount + 1
+	compactedLines := s.lines.Compact(s.board)
+	s.lineCount = s.lineCount + compactedLines
+	s.activePiece = s.nextPiece
+	s.nextPiece = RandomPiece()
 }
 
-func redraw(ss *serverSession) {
+func (s *serverSession) Redraw() {
 
-	for r := range ss.moveQueue {
+	for r := range s.moveQueue {
 
-		GetFileLogger().Printf("Enqueue game update game for Player: %s", ss.player.uuid)
-		GetFileLogger().Printf("Active Piece Before Move piece: %s move: %s", ss.activePiece.String(), string(r))
+		s.sugar.Debugf("Enqueue game update game for Player: %s", s.player.UUID)
+		s.sugar.Debugf("Active Piece Before Move piece: %s move: %s", s.activePiece.String(), string(r))
 
 		var pieceMoved bool
 		switch r {
 		case shared.MOVELEFT:
-			pieceMoved = ss.MoveActivePieceLeftIfPossible()
+			pieceMoved = s.MoveActivePieceLeftIfPossible()
 		case shared.MOVERIGHT:
-			pieceMoved = ss.MoveActivePieceRightIfPossible()
+			pieceMoved = s.MoveActivePieceRightIfPossible()
 		case shared.ROTATELEFT:
-			pieceMoved = ss.RotateActivePieceAnticlockwiseIfPossible()
+			pieceMoved = s.RotateActivePieceAnticlockwiseIfPossible()
 		case shared.ROTATERIGHT:
-			pieceMoved = ss.RotateActivePieceClockwiseIfPossible()
+			pieceMoved = s.RotateActivePieceClockwiseIfPossible()
 		case shared.DOWN:
-			if ss.MoveActivePieceDownIfPossible() {
+			if s.MoveActivePieceDownIfPossible() {
 				pieceMoved = true
 			} else {
-				nextPiece(ss)
+				s.ChooseNextPiece()
 			}
 		case shared.DROP:
-			for b := true; b; b = ss.MoveActivePieceDownIfPossible() {
+			for b := true; b; b = s.MoveActivePieceDownIfPossible() {
 			}
-			nextPiece(ss)
+			s.ChooseNextPiece()
 		}
 
-		GetFileLogger().Printf("Active Piece After Move piece: %s, piece moved?: %t", ss.activePiece.String(), pieceMoved)
+		s.tetris.sugar.Debugf("Active Piece After Move piece: %s, piece moved?: %t", s.activePiece.String(), pieceMoved)
 
-		var topLine = ss.board.Height
-		for k, _ := range ss.lines.lineMap {
+		var topLine = s.board.Height
+		for k, _ := range s.lines.lineMap {
 			if k < topLine {
 				topLine = k
 			}
 		}
 
-		ss.gameOver = topLine <= 2
+		s.gameOver = topLine <= 2
 
-		ss.gameQueue <- gameState(ss)
+		s.gameQueue <- s.GetGameState()
 
-		if ss.gameOver {
-			close(ss.gameQueue)
+		if s.gameOver {
+			close(s.gameQueue)
 		}
 
 	}

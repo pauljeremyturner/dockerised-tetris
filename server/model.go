@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/pauljeremyturner/dockerised-tetris/protogen"
 	"github.com/pauljeremyturner/dockerised-tetris/shared"
 	"math/rand"
 	"sort"
@@ -19,6 +20,57 @@ type GameState struct {
 
 type Lines struct {
 	lineMap map[int][]Pixel
+}
+
+//go:generate stringer -type=PieceType
+type PieceType int
+
+const (
+	PieceTypeUnknown PieceType = iota - 1
+	PieceTypeI
+	PieceTypeO
+	PieceTypeT
+	PieceTypeL
+	PieceTypeP
+	PieceTypeS
+	PieceTypeZ
+)
+
+//go:generate stringer -type=Color
+type Color int
+
+const (
+	ColorUnknown Color = iota - 1
+	ColorMajenta
+	ColorCyan
+	ColorYellow
+	ColorBlue
+	ColorGreen
+	ColorRed
+	ColorWhite
+	ColorBlack
+)
+
+func colorToProto(c Color) protogen.Square_ColorEnum {
+
+	switch c {
+	case ColorMajenta:
+		return protogen.Square_MAGENTA
+	case ColorCyan:
+		return protogen.Square_CYAN
+	case ColorYellow:
+		return protogen.Square_YELLOW
+	case ColorBlue:
+		return protogen.Square_BLUE
+	case ColorGreen:
+		return protogen.Square_GREEN
+	case ColorRed:
+		return protogen.Square_RED
+	case ColorWhite:
+		return protogen.Square_WHITE
+	default:
+		return protogen.Square_BLACK
+	}
 }
 
 func (r *Lines) Compact(board shared.Board) int {
@@ -93,13 +145,17 @@ func (r *Piece) Clone() *Piece {
 	return pieceCopy
 }
 
-func newPiece(ps []Pixel) Piece {
-	return Piece{pixels: ps}
+func newPiece(ps []Pixel, pt PieceType) Piece {
+	return Piece{
+		pixels:    ps,
+		pieceType: pt,
+	}
 }
 
 type Piece struct {
 	// pixels[0] is used as the centre piece for calculating rotations
-	pixels []Pixel
+	pixels    []Pixel
+	pieceType PieceType
 }
 
 func RandomPiece() Piece {
@@ -116,10 +172,9 @@ func RandomPiece() Piece {
 		return NewS()
 	case 5:
 		return NewT()
-	case 6:
+	default:
 		return NewZ()
 	}
-	panic("Expecting a piece to return")
 }
 
 func (r *Piece) rotateClockwise() {
@@ -138,15 +193,11 @@ func (r *Piece) rotateAnticlockwise() {
 
 func (r *Piece) moveDown() {
 
-	GetFileLogger().Println("Move Down")
-
 	for i := range r.pixels {
 		r.pixels[i].moveDown()
 	}
 }
 func (r *Piece) moveLeft() {
-
-	GetFileLogger().Println("Move Left")
 
 	for i := range r.pixels {
 		r.pixels[i].moveLeft()
@@ -154,13 +205,10 @@ func (r *Piece) moveLeft() {
 }
 func (r *Piece) moveRight() {
 
-	GetFileLogger().Println("Move Right")
-
 	for i := range r.pixels {
 		r.pixels[i].moveRight()
 	}
 }
-
 
 func NewO() Piece {
 	/**
@@ -168,12 +216,12 @@ func NewO() Piece {
 	  XX
 	*/
 	pixels := []Pixel{
-		{X: 1, Y: 0, Color: 0},
-		{X: 0, Y: 0, Color: 0},
-		{X: 0, Y: 1, Color: 0},
-		{X: 1, Y: 1, Color: 0},
+		{X: 1, Y: 0, Color: ColorMajenta},
+		{X: 0, Y: 0, Color: ColorMajenta},
+		{X: 0, Y: 1, Color: ColorMajenta},
+		{X: 1, Y: 1, Color: ColorMajenta},
 	}
-	return newPiece(pixels)
+	return newPiece(pixels, PieceTypeO)
 }
 
 func NewI() Piece {
@@ -181,12 +229,12 @@ func NewI() Piece {
 	   XXXXXX
 	*/
 	points := []Pixel{
-		{X: 0, Y: 1, Color: 1},
-		{X: 0, Y: 0, Color: 1},
-		{X: 0, Y: 2, Color: 1},
-		{X: 0, Y: 3, Color: 1},
+		{X: 0, Y: 1, Color: ColorCyan},
+		{X: 0, Y: 0, Color: ColorCyan},
+		{X: 0, Y: 2, Color: ColorCyan},
+		{X: 0, Y: 3, Color: ColorCyan},
 	}
-	return newPiece(points)
+	return newPiece(points, PieceTypeI)
 }
 
 func NewT() Piece {
@@ -200,7 +248,7 @@ func NewT() Piece {
 		{X: 0, Y: 1, Color: 2},
 		{X: 2, Y: 1, Color: 2},
 	}
-	return newPiece(pixels)
+	return newPiece(pixels, PieceTypeT)
 }
 
 func NewL() Piece {
@@ -215,7 +263,7 @@ func NewL() Piece {
 		{X: 1, Y: 0, Color: 3},
 		{X: 0, Y: 2, Color: 3},
 	}
-	return newPiece(pixels)
+	return newPiece(pixels, PieceTypeL)
 }
 
 func NewP() Piece {
@@ -230,7 +278,7 @@ func NewP() Piece {
 		{X: 0, Y: 2, Color: 4},
 		{X: 1, Y: 2, Color: 4},
 	}
-	return newPiece(points)
+	return newPiece(points, PieceTypeP)
 }
 
 func NewS() Piece {
@@ -244,7 +292,7 @@ func NewS() Piece {
 		{X: 1, Y: 1, Color: 5},
 		{X: 2, Y: 1, Color: 5},
 	}
-	return newPiece(pixels)
+	return newPiece(pixels, PieceTypeS)
 }
 
 func NewZ() Piece {
@@ -258,42 +306,35 @@ func NewZ() Piece {
 		{X: 1, Y: 0, Color: 6},
 		{X: 2, Y: 0, Color: 6},
 	}
-	return newPiece(pixels)
+	return newPiece(pixels, PieceTypeZ)
 }
 
 func (r *Piece) String() string {
-	var s = ""
+	var s = "Piece: " + r.pieceType.String()
 	for _, pix := range r.pixels {
-		s = s + fmt.Sprintf("pixel, (%d, %d) color %d; ", pix.X, pix.Y, pix.Color)
+		s = s + pix.String()
 	}
 	return s
 }
 
-type serverSession struct {
-	player       Player
-	moveQueue    chan shared.MoveType
-	gameQueue    chan GameState
-	activePiece  Piece
-	lines        Lines
-	nextPiece    Piece
-	gameOver     bool
-	lineCount    int
-	pieceCount   int
-	board        shared.Board
-	startSeconds int64
+type Player struct {
+	UUID uuid.UUID
+	Name string
 }
 
-type Player struct {
-	uuid       uuid.UUID
-	playerName string
+func (p Player) String() string {
+	return fmt.Sprintf("player, Name: %s, UUID: %s", p.Name, p.UUID.String())
 }
 
 type Pixel struct {
 	X     int
 	Y     int
-	Color int
+	Color Color
 }
 
+func (r *Pixel) String() string {
+	return fmt.Sprintf("Pixel: (%d, %d) %s", r.X, r.Y, r.Color.String())
+}
 func (r *Pixel) SameLocationAs(p Pixel) bool {
 	return (r.X == p.X) && (r.Y == p.Y)
 }
@@ -335,75 +376,75 @@ func (r *Pixel) moveRight() {
 	r.X = r.X + 1
 }
 
-func (r *serverSession) MoveActivePieceDownIfPossible() bool {
+func (s *serverSession) MoveActivePieceDownIfPossible() bool {
 
-	ap := r.activePiece
+	ap := s.activePiece
 
 	pieceCopy := ap.Clone()
 	pieceCopy.moveDown()
 
-	if isMovePossible(r, pieceCopy) {
-		r.activePiece = *pieceCopy
+	if isMovePossible(s, pieceCopy) {
+		s.activePiece = *pieceCopy
 		return true
 	} else {
 		return false
 	}
 }
 
-func (r *serverSession) MoveActivePieceRightIfPossible() bool {
+func (s *serverSession) MoveActivePieceRightIfPossible() bool {
 
-	ap := r.activePiece
+	ap := s.activePiece
 
 	pieceCopy := ap.Clone()
 	pieceCopy.moveRight()
 
-	if isMovePossible(r, pieceCopy) {
-		r.activePiece = *pieceCopy
+	if isMovePossible(s, pieceCopy) {
+		s.activePiece = *pieceCopy
 		return true
 	} else {
 		return false
 	}
 }
 
-func (r *serverSession) MoveActivePieceLeftIfPossible() bool {
+func (s *serverSession) MoveActivePieceLeftIfPossible() bool {
 
-	ap := r.activePiece
+	ap := s.activePiece
 
 	pieceCopy := ap.Clone()
 	pieceCopy.moveLeft()
 
-	if isMovePossible(r, pieceCopy) {
-		r.activePiece = *pieceCopy
+	if isMovePossible(s, pieceCopy) {
+		s.activePiece = *pieceCopy
 		return true
 	} else {
 		return false
 	}
 }
 
-func (r *serverSession) RotateActivePieceClockwiseIfPossible() bool {
+func (s *serverSession) RotateActivePieceClockwiseIfPossible() bool {
 
-	ap := r.activePiece
+	ap := s.activePiece
 
 	pieceCopy := ap.Clone()
 	pieceCopy.rotateClockwise()
 
-	if isMovePossible(r, pieceCopy) {
-		r.activePiece = *pieceCopy
+	if isMovePossible(s, pieceCopy) {
+		s.activePiece = *pieceCopy
 		return true
 	} else {
 		return false
 	}
 }
 
-func (r *serverSession) RotateActivePieceAnticlockwiseIfPossible() bool {
+func (s *serverSession) RotateActivePieceAnticlockwiseIfPossible() bool {
 
-	ap := r.activePiece
+	ap := s.activePiece
 
 	pieceCopy := ap.Clone()
 	pieceCopy.rotateAnticlockwise()
 
-	if isMovePossible(r, pieceCopy) {
-		r.activePiece = *pieceCopy
+	if isMovePossible(s, pieceCopy) {
+		s.activePiece = *pieceCopy
 		return true
 	} else {
 		return false

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/nsf/termbox-go"
 	"github.com/pauljeremyturner/dockerised-tetris/shared"
+	"go.uber.org/zap"
 	"sync"
 )
 
 const (
-
 	originXBoard = 2
 	originYBoard = 10
 
@@ -26,34 +26,34 @@ const (
 type TetrisUi struct {
 	eventChannel  chan termbox.Event
 	playerSession ClientSession
-	appLog        *Logger
+	sugar         *zap.SugaredLogger
 	board         shared.Board
-	wg sync.WaitGroup
-	gameOver bool
+	wg            sync.WaitGroup
+	gameOver      bool
 }
 
-func NewTetrisUi(cs *ClientSession) TetrisUi {
-wg := sync.WaitGroup{}
-wg.Add(1)
+func NewTetrisUi(cs *ClientSession, sugar *zap.SugaredLogger) TetrisUi {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	return TetrisUi{
 		eventChannel:  make(chan termbox.Event, 10),
-		appLog:        GetFileLogger(),
 		playerSession: *cs,
 		board: shared.Board{
 			Height: shared.BOARDSIZEY,
 			Width:  shared.BOARDSIZEX,
 		},
-		wg: wg,
+		wg:       wg,
 		gameOver: false,
+		sugar:    sugar,
 	}
 }
 
-func (r *TetrisUi) StartGame() {
+func (r *TetrisUi) StartGame() error {
 
 	err := termbox.Init()
 
 	if err != nil {
-		appLog.Panicf("Initialise terminal failed: %s", err)
+		return NewClientSystemError("unable to initialise termbox", err)
 	}
 
 	go r.readKey()
@@ -71,13 +71,15 @@ func (r *TetrisUi) StartGame() {
 	termbox.PollEvent()
 	termbox.Flush()
 	termbox.SetInputMode(termbox.InputEsc)
+
+	return nil
 }
 
 func (r *TetrisUi) ListenToBoardUpdates() {
 
 	for gm := range r.playerSession.BoardUpdateChannel {
 
-		r.appLog.Printf("Board Update: %s", gm.String())
+		r.sugar.Debugf("board update, gameState: %v", gm.String())
 
 		if gm.GameOver {
 			r.gameOver = true
@@ -92,13 +94,13 @@ func (r *TetrisUi) ListenToBoardUpdates() {
 
 		for x := 0; x < r.board.Width; x++ {
 			for y := 0; y < r.board.Height; y++ {
-				r.drawBoardPixel(Pixel{X:x, Y:y, Color: termbox.ColorDefault})
+				r.drawBoardPixel(Pixel{X: x, Y: y, Color: termbox.ColorDefault})
 			}
 		}
 
 		for x := 0; x < 4; x++ {
 			for y := 0; y < 4; y++ {
-				r.drawNextPiecePixel(Pixel{X:x, Y:y, Color: termbox.ColorDefault})
+				r.drawNextPiecePixel(Pixel{X: x, Y: y, Color: termbox.ColorDefault})
 			}
 		}
 
@@ -121,13 +123,10 @@ func (r *TetrisUi) String() string {
 	return fmt.Sprintf("Tetris client: playerSession: %s, board: %s", r.playerSession.String(), r.board.String())
 }
 
-
-
 func (r *TetrisUi) readKey() {
 	switch ev := termbox.PollEvent(); ev.Type {
 	case termbox.EventKey:
-
-
+		r.sugar.Debugf("user keypress. got : %c", ev.Key)
 		if !r.gameOver {
 			r.eventChannel <- ev
 		} else {
@@ -146,7 +145,7 @@ func (r *TetrisUi) listenKeyPress() {
 func (r *TetrisUi) onKeyPress(event termbox.Event) {
 
 	moveType := shared.MoveType(event.Ch)
-
+	r.sugar.Debugf("keyPress, moveType: %s", moveType.String())
 	switch moveType {
 	case shared.ROTATELEFT:
 		fallthrough
@@ -159,28 +158,22 @@ func (r *TetrisUi) onKeyPress(event termbox.Event) {
 	case shared.DROP:
 		fallthrough
 	case shared.DOWN:
-		r.appLog.Printf("UI -> enqueue move %s", string(moveType))
 		r.playerSession.MoveChannel <- moveType
 		fallthrough
 	default:
-		r.appLog.Println("UI -> unknown comamnd, ignoring")
-
 
 	}
 }
 
-func (t *TetrisUi) signalEndOfGame() {
-	t.wg.Done()
+func (r *TetrisUi) signalEndOfGame() {
+	r.wg.Done()
 }
 
-func  (t *TetrisUi) awaitEndOfGame() {
-	t.wg.Wait()
+func (r *TetrisUi) awaitEndOfGame() {
+	r.wg.Wait()
 }
-
 
 func (r *TetrisUi) drawBoardPixel(p Pixel) {
-
-	//r.appLog.Println("draw board pixel ", p)
 	termbox.SetCell(originXBoard+(2*p.X), originYBoard+p.Y, ' ', p.Color, p.Color)
 	termbox.SetCell(originXBoard+(2*p.X+1), originYBoard+p.Y, ' ', p.Color, p.Color)
 }
@@ -195,7 +188,6 @@ func (r *TetrisUi) writeMessage(message string, x int, y int, color termbox.Attr
 }
 
 func (r *TetrisUi) drawNextPiecePixel(p Pixel) {
-	//r.appLog.Println("draw next piece pixel ", p)
 	termbox.SetCell(originXNextPiece+(2*p.X), originYNextPiece+p.Y, ' ', p.Color, p.Color)
 	termbox.SetCell(originXNextPiece+(2*p.X+1), originYNextPiece+p.Y, ' ', p.Color, p.Color)
 }

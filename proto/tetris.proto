@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+option go_package = ".;proto";
+
+//[paul@localhost dockerised-tetris]$ protoc - protoc --go-grpc_out=./protogen
+message NewGameRequest {
+  string playerName = 1;
+  string uuid = 2;
+}
+
+message Square {
+  uint32 x = 1;
+  uint32 y = 2;
+  enum ColorEnum {
+    MAGENTA = 0;
+    CYAN = 1;
+    YELLOW = 2;
+    GREEN = 3;
+    BLUE = 4;
+    RED = 5;
+    WHITE = 6;
+    BLACK = 7;
+  }
+  ColorEnum color = 3;
+}
+
+message GameUpdateResponse {
+  string uuid = 1;
+  string playerName = 2;
+  bool gameOver = 3;
+  uint32 lines = 4;
+  uint32 pieces = 5;
+  int64 duration = 6;
+  repeated Square squares = 7;
+  repeated Square nextPiece =  8;
+}
+
+message MoveResponse {
+}
+
+message MoveRequest {
+  string uuid = 1;
+  enum MoveEnum {
+    DROP = 0;
+    MOVELEFT = 1;
+    MOVERIGHT = 2;
+    ROTATELEFT = 3;
+    ROTATERIGHT = 4;
+    DOWN = 5;
+  }
+  MoveEnum move = 2;
+}
+
+service Move {
+  rpc Move(MoveRequest) returns (MoveResponse)
+  {}
+}
+service Game {
+  rpc StartGame(NewGameRequest) returns (stream GameUpdateResponse)
+  {}
+}
